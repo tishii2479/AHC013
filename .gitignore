@@ -1,0 +1,6 @@
+in/
+out/
+tools/
+.vscode/
+.mypy_cache/
+*.o
