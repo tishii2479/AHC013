@@ -1,14 +1,10 @@
-src_dir = "AHC011/"
+src_dir = "AHC013/AHC013/"
 files = [
     "Values.swift",
     "main.swift",
-    "Board.swift",
-    "Solver.swift",
-    "TreeConstructor.swift",
-    "MoveConstructor.swift",
+    "Field.swift",
     "Util.swift",
     "Queue.swift",
-    "UnionFind.swift",
     "IO.swift",
 ]
 

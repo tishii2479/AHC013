@@ -294,7 +294,7 @@ int main() {
 
             std::cerr << best_score << " " << comp.pos << " " << best_pos << std::endl;
 
-            output();
+            // output();
         }
         std::cerr << sum << std::endl;
     };

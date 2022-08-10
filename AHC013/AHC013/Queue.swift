@@ -1,4 +1,4 @@
-class Queue<T> {
+struct Queue<T> {
     private var values: [T] = [T]()
     private var ptr: Int = 0
     
@@ -6,11 +6,11 @@ class Queue<T> {
         values.count - ptr
     }
     
-    func push(_ v: T) {
+    mutating func push(_ v: T) {
         values.append(v)
     }
     
-    func pop() -> T? {
+    mutating func pop() -> T? {
         guard ptr < values.count else {
             return nil
         }
