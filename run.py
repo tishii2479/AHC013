@@ -18,9 +18,8 @@ def test_run(exe_file: str) -> None:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            exec = "./tester.o < tmp"
             proc = subprocess.run(
-                f"cat {in_file} {out_file} > tmp && " + exec + " && rm tmp",
+                f"cat {in_file} {out_file} | ./tester.o",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

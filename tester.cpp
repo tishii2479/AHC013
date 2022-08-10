@@ -131,7 +131,7 @@ int main() {
         }
     }
 
-    cout << "Score=" << score << endl;
+    cout << "Score = " << score << endl;
 
     return 0;
 }

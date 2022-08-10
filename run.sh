@@ -1,5 +1,9 @@
 ./build.sh
 
-./main.o < in/0000.txt > out/0000.txt
+FILE=$1
 
-cat in/0000.txt out/0000.txt > tmp && ./tester.o < tmp && rm tmp
+./main.o < in/$FILE.txt > out/$FILE.txt
+
+cat in/$FILE.txt out/$FILE.txt | ./tester.o
+
+pbcopy < out/$FILE.txt

@@ -4,3 +4,4 @@ tools/
 .vscode/
 .mypy_cache/
 *.o
+xcuserdata
