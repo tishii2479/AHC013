@@ -105,26 +105,29 @@ class FieldTest: XCTestCase {
         ]
         let field = Field(size: fieldSize)
         field.parseField(strs: strs)
-            
+        
         XCTAssertEqual(
-            field.calcScoreDiff2(comp: field.computers[0]),
-            -2
-        )
-        XCTAssertEqual(
-            field.calcScoreDiff2(comp: field.computers[5]),
-            -3
-        )
-        XCTAssertEqual(
-            field.calcScoreDiff2(comp: field.computers[9]),
-            -7
-        )
-        XCTAssertEqual(
-            field.calcScoreDiff2(comp: field.computers[1]),
-            -4
+            field.calcMoveDiff(comp: field.computers[6], to: Pos(x: 3, y: 2)),
+            1
         )
         
         XCTAssertEqual(
-            field.calcScoreDiff2(comp: field.computers[1], ignoreComp: <#T##[Computer]#>),
+            field.calcMoveDiff(comp: field.computers[9], to: Pos(x: 3, y: 4)),
+            -6
+        )
+        
+        XCTAssertEqual(
+            field.calcMoveDiff(comp: field.computers[0], to: Pos(x: 2, y: 0)),
+            0
+        )
+
+        XCTAssertEqual(
+            field.calcMoveDiff(comp: field.computers[5], to: Pos(x: 2, y: 2)),
+            -2
+        )
+        
+        XCTAssertEqual(
+            field.calcMoveDiff(comp: field.computers[3], to: Pos(x: 3, y: 2)),
             -4
         )
     }

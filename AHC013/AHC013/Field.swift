@@ -57,13 +57,13 @@ class Field {
         cells[pos.y][pos.x]
     }
     
-    func getNearestComputer(pos: Pos, dir: Dir, ignoreComp: [Computer] = []) -> Computer? {
+    func getNearestComputer(pos: Pos, dir: Dir, ignoreComp: Computer? = nil) -> Computer? {
         var cPos = pos + dir
         
         while cPos.isValid(boardSize: fieldSize) {
             let cell = cell(pos: cPos)
             if let computer = cell.computer,
-               !ignoreComp.contains(computer) {
+               computer != ignoreComp {
                 return computer
             }
             if cell.isCabled {
@@ -74,7 +74,7 @@ class Field {
         return nil
     }
     
-    func getCluster(ofComputer comp: Computer, ignoreComp: [Computer] = []) -> Set<Int> {
+    func getCluster(ofComputer comp: Computer, ignoreComp: Computer? = nil) -> Set<Int> {
         var cluster = Set<Int>()
         cluster.insert(comp.id)
         
@@ -83,14 +83,14 @@ class Field {
         
         while let pos = q.pop() {
             for dir in Dir.all {
-                guard let adjacentCompId = getNearestComputer(pos: pos, dir: dir)?.id else {
+                guard let adjacentCompId = getNearestComputer(pos: pos, dir: dir, ignoreComp: ignoreComp)?.id else {
                     continue
                 }
                 guard computers[adjacentCompId].type == comp.type,
                       !cluster.contains(adjacentCompId) else {
                     continue
                 }
-                guard !ignoreComp.contains(computers[adjacentCompId]) else {
+                guard ignoreComp != computers[adjacentCompId] else {
                     continue
                 }
                 
@@ -107,81 +107,54 @@ class Field {
         return cluster.contains(comp2.id)
     }
     
-    func calcScoreDiff2(comp: Computer, ignoreComp: [Computer] = []) -> Int {
+    func moveComputer(comp: Computer, to: Pos) {
+        cells[comp.pos.y][comp.pos.x].computer = nil
+        comp.pos = to
+        cells[comp.pos.y][comp.pos.x].computer = comp
+    }
+    
+    func calcMoveDiff(comp: Computer, to: Pos) -> Int {
+        let removalScore = calcScoreDiff(comp: comp)
+        
+        let prevPos = comp.pos
+        
+        // Create temporary field by changing comp.pos
+        moveComputer(comp: comp, to: to)
+        let movedScore = calcScoreDiff(comp: comp)
+        moveComputer(comp: comp, to: prevPos)
+        
+        print(removalScore, movedScore, prevPos, to)
+        return movedScore - removalScore
+    }
+
+    // Calc diff of (added - removed)
+    func calcScoreDiff(comp: Computer) -> Int {
         var currentClusters = Set<Set<Int>>()
         for dir in Dir.all {
-            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: ignoreComp) else {
+            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir) else {
                 continue
             }
             
-            currentClusters.insert(getCluster(ofComputer: adjComp, ignoreComp: ignoreComp))
+            currentClusters.insert(getCluster(ofComputer: adjComp))
         }
         var removedClusters = Set<Set<Int>>()
         for dir in Dir.all {
-            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: ignoreComp + [comp]) else {
+            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: comp) else {
                 continue
             }
-            removedClusters.insert(getCluster(ofComputer: adjComp, ignoreComp: ignoreComp + [comp]))
+            removedClusters.insert(getCluster(ofComputer: adjComp, ignoreComp: comp))
         }
         
         var scoreDiff: Int = 0
         for cluster in currentClusters {
-            scoreDiff -= cluster.count * (cluster.count - 1) / 2
+            scoreDiff += cluster.count * (cluster.count - 1) / 2
         }
         for cluster in removedClusters {
-            scoreDiff += cluster.count * (cluster.count - 1) / 2
+            scoreDiff -= cluster.count * (cluster.count - 1) / 2
         }
         return scoreDiff
     }
     
-    func calcScoreDiff(comp: Computer, ignoreComp: [Computer] = []) -> Int {
-        var scoreDiff = 0
-        var detachedComps = Set<Int>()
-        for dir in Dir.all {
-            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: ignoreComp) else {
-                continue
-            }
-            if comp.type == adjComp.type {
-                detachedComps.formUnion(getCluster(ofComputer: adjComp, ignoreComp: ignoreComp))
-            }
-        }
-
-        scoreDiff -= detachedComps.count - 1
-        
-        var mergedComp = Set<Int>()
-        
-        for (d1, d2) in [(Dir.left, Dir.right), (Dir.up, Dir.down)] {
-            guard let comp1 = getNearestComputer(pos: comp.pos, dir: d1, ignoreComp: ignoreComp),
-                  let comp2 = getNearestComputer(pos: comp.pos, dir: d2, ignoreComp: ignoreComp) else {
-                continue
-            }
-
-            if comp1.type != comp2.type {
-                continue
-            }
-
-            let cluster1 = getCluster(ofComputer: comp1, ignoreComp: ignoreComp)
-            let cluster2 = getCluster(ofComputer: comp2, ignoreComp: ignoreComp)
-
-            // Check the pair is not already merged like:
-            // xx
-            // xox
-            //  xx
-            if mergedComp == cluster1.union(cluster2) {
-                continue
-            }
-            
-            if cluster1 == cluster2 {
-                continue
-            }
-
-            scoreDiff += cluster1.count * cluster2.count
-            mergedComp.formUnion(cluster1)
-            mergedComp.formUnion(cluster2)
-        }
-
-        return scoreDiff
-    }
 }
 
 class UnionFind {
