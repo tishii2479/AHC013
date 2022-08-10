@@ -1,5 +1,3 @@
-./build.sh
-
 FILE=$1
 
 ./main.o < in/$FILE.txt > out/$FILE.txt

@@ -20,6 +20,8 @@
 		B1AA4A6B28A3C626001706B3 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AA07428A35C0600F89686 /* main.swift */; };
 		B1AA4A6C28A3C626001706B3 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A5C28A3BA1B001706B3 /* Field.swift */; };
 		B1AA4A6D28A3C626001706B3 /* IO.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AA08D28A35D8600F89686 /* IO.swift */; };
+		B1AA4A6F28A3D55F001706B3 /* Solver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6E28A3D55F001706B3 /* Solver.swift */; };
+		B1AA4A7028A3D55F001706B3 /* Solver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6E28A3D55F001706B3 /* Solver.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,6 +46,7 @@
 		B1AA4A5E28A3BA9A001706B3 /* Values.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Values.swift; sourceTree = "<group>"; };
 		B1AA4A6028A3C00C001706B3 /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		B1AA4A6228A3C61F001706B3 /* FieldTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTest.swift; sourceTree = "<group>"; };
+		B1AA4A6E28A3D55F001706B3 /* Solver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Solver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +90,7 @@
 			children = (
 				B1AA4A6028A3C00C001706B3 /* Util.swift */,
 				B15AA07428A35C0600F89686 /* main.swift */,
+				B1AA4A6E28A3D55F001706B3 /* Solver.swift */,
 				B1AA4A5C28A3BA1B001706B3 /* Field.swift */,
 				B1AA4A5E28A3BA9A001706B3 /* Values.swift */,
 				B15AA08D28A35D8600F89686 /* IO.swift */,
@@ -197,6 +201,7 @@
 				B15AA08E28A35D8600F89686 /* Queue.swift in Sources */,
 				B1AA4A5F28A3BA9A001706B3 /* Values.swift in Sources */,
 				B1AA4A5D28A3BA1B001706B3 /* Field.swift in Sources */,
+				B1AA4A6F28A3D55F001706B3 /* Solver.swift in Sources */,
 				B15AA08F28A35D8600F89686 /* IO.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -207,6 +212,7 @@
 			files = (
 				B1AA4A6328A3C61F001706B3 /* FieldTest.swift in Sources */,
 				B1AA4A6B28A3C626001706B3 /* main.swift in Sources */,
+				B1AA4A7028A3D55F001706B3 /* Solver.swift in Sources */,
 				B1AA4A6C28A3C626001706B3 /* Field.swift in Sources */,
 				B1AA4A6928A3C626001706B3 /* Values.swift in Sources */,
 				B1AA4A6828A3C626001706B3 /* Queue.swift in Sources */,

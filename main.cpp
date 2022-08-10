@@ -30,7 +30,7 @@ struct Comp {
     Pos pos;
 };
 
-Pos operator+(Pos &lhs, Pos &rhs) {
+Pos operator+(const Pos &lhs, const Pos &rhs) {
     return {lhs.y + rhs.y, lhs.x + rhs.x};
 }
 
@@ -113,6 +113,7 @@ std::vector<std::pair<Pos, Pos>> connect() {
             field[i][j].cable = 0;
 
     const auto connect = [&](Pos p1, Pos p2, int type) -> bool {
+        if (type != 1) return false;
         for (auto [y, x] : between_ps(p1, p2)) {
             if (field[y][x].is_cabled() and field[y][x].cable != type) return false;
             field[y][x].cable = type;
@@ -239,6 +240,7 @@ int main() {
 
         int comp_idx = rand(0, computers.size());
         Comp comp = computers[comp_idx];
+        if (comp.type != 1) return;
 
         int base_score = 0;
         for (auto dir : dirs) {
@@ -271,7 +273,6 @@ int main() {
                 if (d1_comp_idx != -1 and d2_comp_idx != -1 and computers[d1_comp_idx].type == computers[d2_comp_idx].type) {
                     int d1_cluster_size = get_cluster(d1_comp_idx, d2_comp_idx);
                     int d2_cluster_size = get_cluster(d2_comp_idx, d1_comp_idx);
-                    std::cerr << "connected!" << std::endl;
                     std::cerr << d1_cluster_size << " " << d2_cluster_size << std::endl;
                     bool not_in_same_cluster = d1_cluster_size != -1 and d2_cluster_size != -1;
                     if (not_in_same_cluster) {
@@ -300,8 +301,7 @@ int main() {
     };
 
     // while (elapsed_seconds() < 2.8) {
-    // while (moves.size() < k * 35 && elapsed_seconds() < 2.8) {
-    for (int i = 0; i < 10; i++) {
+    while (moves.size() < k * 35 && elapsed_seconds() < 2.8) {
         search_move();
     }
 

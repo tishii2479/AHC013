@@ -57,12 +57,13 @@ class Field {
         cells[pos.y][pos.x]
     }
     
-    func getAdjacentComputer(pos: Pos, dir: Dir) -> Computer? {
+    func getNearestComputer(pos: Pos, dir: Dir, ignoreComp: [Computer] = []) -> Computer? {
         var cPos = pos + dir
         
         while cPos.isValid(boardSize: fieldSize) {
             let cell = cell(pos: cPos)
-            if let computer = cell.computer {
+            if let computer = cell.computer,
+               !ignoreComp.contains(computer) {
                 return computer
             }
             if cell.isCabled {
@@ -72,34 +73,152 @@ class Field {
         }
         return nil
     }
-
-    func getCluster(ofComputerIdx compIdx: Int) -> Set<Int> {
+    
+    func getCluster(ofComputer comp: Computer, ignoreComp: [Computer] = []) -> Set<Int> {
         var cluster = Set<Int>()
-        cluster.insert(compIdx)
+        cluster.insert(comp.id)
         
         var q = Queue<Pos>()
-        q.push(computers[compIdx].pos)
+        q.push(comp.pos)
         
         while let pos = q.pop() {
             for dir in Dir.all {
-                guard let adjacentCompIdx = getAdjacentComputer(pos: pos, dir: dir)?.id else {
+                guard let adjacentCompId = getNearestComputer(pos: pos, dir: dir)?.id else {
                     continue
                 }
-                guard computers[adjacentCompIdx].type == computers[compIdx].type,
-                      !cluster.contains(adjacentCompIdx) else {
+                guard computers[adjacentCompId].type == comp.type,
+                      !cluster.contains(adjacentCompId) else {
+                    continue
+                }
+                guard !ignoreComp.contains(computers[adjacentCompId]) else {
                     continue
                 }
                 
-                q.push(computers[adjacentCompIdx].pos)
-                cluster.insert(adjacentCompIdx)
+                q.push(computers[adjacentCompId].pos)
+                cluster.insert(adjacentCompId)
             }
         }
         
         return cluster
     }
     
-    func isInSameCluster(compIdx1: Int, compIdx2: Int) -> Bool {
-        let cluster = getCluster(ofComputerIdx: compIdx1)
-        return cluster.contains(compIdx2)
+    func isInSameCluster(comp1: Computer, comp2: Computer) -> Bool {
+        let cluster = getCluster(ofComputer: comp1)
+        return cluster.contains(comp2.id)
+    }
+    
+    func calcScoreDiff2(comp: Computer, ignoreComp: [Computer] = []) -> Int {
+        var currentClusters = Set<Set<Int>>()
+        for dir in Dir.all {
+            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: ignoreComp) else {
+                continue
+            }
+            
+            currentClusters.insert(getCluster(ofComputer: adjComp, ignoreComp: ignoreComp))
+        }
+        var removedClusters = Set<Set<Int>>()
+        for dir in Dir.all {
+            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: ignoreComp + [comp]) else {
+                continue
+            }
+            removedClusters.insert(getCluster(ofComputer: adjComp, ignoreComp: ignoreComp + [comp]))
+        }
+        
+        var scoreDiff: Int = 0
+        for cluster in currentClusters {
+            scoreDiff -= cluster.count * (cluster.count - 1) / 2
+        }
+        for cluster in removedClusters {
+            scoreDiff += cluster.count * (cluster.count - 1) / 2
+        }
+        return scoreDiff
+    }
+    
+    func calcScoreDiff(comp: Computer, ignoreComp: [Computer] = []) -> Int {
+        var scoreDiff = 0
+        var detachedComps = Set<Int>()
+        for dir in Dir.all {
+            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: ignoreComp) else {
+                continue
+            }
+            if comp.type == adjComp.type {
+                detachedComps.formUnion(getCluster(ofComputer: adjComp, ignoreComp: ignoreComp))
+            }
+        }
+
+        scoreDiff -= detachedComps.count - 1
+        
+        var mergedComp = Set<Int>()
+        
+        for (d1, d2) in [(Dir.left, Dir.right), (Dir.up, Dir.down)] {
+            guard let comp1 = getNearestComputer(pos: comp.pos, dir: d1, ignoreComp: ignoreComp),
+                  let comp2 = getNearestComputer(pos: comp.pos, dir: d2, ignoreComp: ignoreComp) else {
+                continue
+            }
+
+            if comp1.type != comp2.type {
+                continue
+            }
+
+            let cluster1 = getCluster(ofComputer: comp1, ignoreComp: ignoreComp)
+            let cluster2 = getCluster(ofComputer: comp2, ignoreComp: ignoreComp)
+
+            // Check the pair is not already merged like:
+            // xx
+            // xox
+            //  xx
+            if mergedComp == cluster1.union(cluster2) {
+                continue
+            }
+            
+            if cluster1 == cluster2 {
+                continue
+            }
+
+            scoreDiff += cluster1.count * cluster2.count
+            mergedComp.formUnion(cluster1)
+            mergedComp.formUnion(cluster2)
+        }
+
+        return scoreDiff
     }
 }
+
+class UnionFind {
+    private let n: Int
+    private var par: [Int]
+    
+    init(n: Int) {
+        self.n = n
+        self.par = [Int](repeating: -1, count: n)
+    }
+
+    @discardableResult
+    func merge(_ a: Int, _ b: Int) -> Bool {
+        var a = root(of: a), b = root(of: b)
+        guard a != b else { return false }
+        if par[a] > par[b] {
+            swap(&a, &b)
+        }
+        par[a] += par[b]
+        par[b] = a
+        return true
+    }
+    
+    func same(_ a: Int, _ b: Int) -> Bool {
+        root(of: a) == root(of: b)
+    }
+    
+    func root(of a: Int) -> Int {
+        if par[a] < 0 {
+            return a
+        }
+        par[a] = root(of: par[a])
+        return par[a]
+    }
+    
+    func size(of a: Int) -> Int {
+        -par[root(of: a)]
+    }
+}
+

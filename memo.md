@@ -7,6 +7,7 @@
     - 両方が大きさ2以上のクラスタは繋げるとスコアが上がる
 - できる限り大きいクラスタを作った方がいい
     - 小さいの何個もよりも大きいの1個
+- 接続の必要な操作回数は$クラスタの大きさの総和 - 1$
 
 ## TODO:
 
@@ -37,3 +38,5 @@
 ### Performance
 
 - 上、左、右、下のコンピュータを持つ
+- undo-可能なunionfindの導入
+    - https://nyaannyaan.github.io/library/data-structure/rollback-union-find.hpp.html

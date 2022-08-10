@@ -9,12 +9,8 @@ func main() {
     }
     field.parseField(strs: fieldInput)
     
-    IO.output(
-        """
-        0
-        0
-        """
-    )
+    let solver = SolverV1(field: field)
+    solver.solve()
 }
 
 main()
