@@ -6,7 +6,7 @@ class Computer {
     var id: Int
     var type: Int
     var pos: Pos
-    var connected: [Computer] = []
+    var connected = Set<Computer>()
     var isFixed: Bool {
         connected.count > 0
     }
@@ -38,6 +38,8 @@ enum Direction {
 struct Cable {
     var compType: Int
     var direction: Direction
+    var comp1: Computer
+    var comp2: Computer
 }
 
 extension Cable {
@@ -100,12 +102,28 @@ struct Move: Command {
     }
 }
 
-struct Connect: Command {
+struct Connect: Command, Hashable {
     var comp1: Computer
     var comp2: Computer
+    
+    init(comp1: Computer, comp2: Computer) {
+        self.comp1 = comp1.id < comp2.id ? comp1 : comp2
+        self.comp2 = comp1.id < comp2.id ? comp2 : comp1
+    }
 
     var outValue: String {
         "\(comp1.pos.y) \(comp1.pos.x) \(comp2.pos.y) \(comp2.pos.x)"
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(comp1)
+        hasher.combine(comp2)
+    }
+}
+
+extension Connect: Equatable {
+    static func == (lhs: Connect, rhs: Connect) -> Bool {
+        return lhs.hashValue == rhs.hashValue
     }
 }
 

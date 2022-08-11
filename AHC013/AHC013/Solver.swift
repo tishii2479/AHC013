@@ -6,7 +6,7 @@ protocol Solver {
 class SolverV1 {
     private let field: Field
     private var moves: [Move] = []
-    private var connects: [Connect] = []
+    private var connects = Set<Connect>()
     private var temporaryMoves: [Move] = []
 
     init(field: Field) {
@@ -15,7 +15,7 @@ class SolverV1 {
 
     func solve() -> ([Move], [Connect]) {
         connectOneCluster(type: 1)
-        return (moves, connects)
+        return (moves, Array(connects))
     }
     
     func connectOneCluster(type: Int) {
@@ -40,13 +40,13 @@ class SolverV1 {
             return a.0 < b.0
         })
         
-        for (_, (comp1, comp2)) in distPair {
+        for (evValue, (comp1, comp2)) in distPair {
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
                 continue
             }
-            IO.log(comp1.pos, comp2.pos)
             
             var selectedMoves: [Move]? = nil
+            var selectedMoveComp: Computer? = nil
 
             if let intersections = Util.intersections(comp1.pos, comp2.pos) {
                 for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
@@ -61,6 +61,7 @@ class SolverV1 {
                             let moves = moves1 + moveToInter + moves2
                             if selectedMoves == nil || moves.count < selectedMoves!.count {
                                 selectedMoves = moves
+                                selectedMoveComp = fromComp
                             }
                         }
                         reverseTemporaryMoves()
@@ -79,7 +80,7 @@ class SolverV1 {
             
             if let moves = selectedMoves {
                 performMoves(moves: moves)
-                performConnect(connect: Connect(comp1: comp1, comp2: comp2))
+                performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
             }
         }
     }
@@ -89,8 +90,12 @@ class SolverV1 {
             return false
         }
         let direction = Util.fromDir(dir: dir)
-        let allowedCable = Cable(compType: compType, direction: direction)
-        return !field.hasCable(from: from, to: to, allowedCable: allowedCable)
+        return !field.hasConflictedCable(
+            from: from,
+            to: to,
+            allowedCompType: compType,
+            allowedDirection: direction
+        )
     }
     
     func moveToInter(from: Pos, inter: Pos) -> [Move]? {
@@ -108,7 +113,7 @@ class SolverV1 {
             guard field.cell(pos: pos).isComputer else { continue }
             
             guard let emptyPos = field.findNearestEmptyCell(pos: pos, ignorePos: ignorePos) else {
-                IO.log("Could not find empty cell")
+//                IO.log("Could not find empty cell")
                 return nil
             }
             
@@ -191,8 +196,18 @@ class SolverV1 {
         field.performMove(move: move)
     }
     
-    private func performConnect(connect: Connect) {
-        connects.append(connect)
-        field.performConnect(connect: connect)
+    private func performConnect(connect: Connect, movedComp: Computer? = nil) {
+        if let movedComp = movedComp,
+           let cable = field.cell(pos: movedComp.pos).cable,
+           cable.compType == movedComp.type {
+            connects.remove(Connect(comp1: cable.comp1, comp2: cable.comp2))
+
+            connects.insert(Connect(comp1: cable.comp1, comp2: movedComp))
+            connects.insert(Connect(comp1: cable.comp2, comp2: movedComp))
+        }
+        else {
+            connects.insert(connect)
+        }
+        field.performConnect(connect: connect, movedComp: movedComp)
     }
 }

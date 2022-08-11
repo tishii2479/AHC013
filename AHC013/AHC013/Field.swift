@@ -86,7 +86,7 @@ class Field {
             dump()
             fatalError()
         }
-        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
+//        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
         moveComputer(comp: comp, to: comp.pos + move.dir)
     }
     
@@ -94,18 +94,55 @@ class Field {
         moves.forEach { performMove(move: $0) }
     }
     
-    func performConnect(connect: Connect) {
+    func performConnect(connect: Connect, movedComp: Computer? = nil) {
         let comp1 = connect.comp1, comp2 = connect.comp2
-        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
-        comp1.connected.append(comp2)
-        comp2.connected.append(comp1)
-        
-        for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
-            guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
-                IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
-                return
+//        IO.log("connect:", comp1.pos, comp2.pos, movedComp?.pos, type: .debug)
+                
+        guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
+            IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
+            return
+        }
+
+        if let movedComp = movedComp,
+           let cable = cell(pos: movedComp.pos).cable,
+           cable.compType == movedComp.type {
+            IO.log(cable.comp1.pos, cable.comp2.pos, movedComp.pos)
+            // movedComp is moved in a cable
+            // update connected information, and remove cable at movedComp.pos
+            cable.comp1.connected.remove(cable.comp2)
+            cable.comp2.connected.remove(cable.comp1)
+            
+            cable.comp1.connected.insert(movedComp)
+            cable.comp2.connected.insert(movedComp)
+            
+            movedComp.connected.insert(cable.comp1)
+            movedComp.connected.insert(cable.comp2)
+            
+            cells[movedComp.pos.y][movedComp.pos.x].cable = nil
+            
+            for pos in Util.getBetweenPos(from: cable.comp1.pos, to: movedComp.pos) {
+                cells[pos.y][pos.x].cable = Cable(
+                    compType: cable.comp1.type, direction: Util.fromDir(dir: dir),
+                    comp1: cable.comp1, comp2: movedComp
+                )
             }
-            cells[pos.y][pos.x].cable = Cable(compType: comp1.type, direction: Util.fromDir(dir: dir))
+            for pos in Util.getBetweenPos(from: movedComp.pos, to: cable.comp2.pos) {
+                cells[pos.y][pos.x].cable = Cable(
+                    compType: cable.comp2.type, direction: Util.fromDir(dir: dir),
+                    comp1: movedComp, comp2: cable.comp2
+                )
+            }
+        }
+        else {
+            comp1.connected.insert(comp2)
+            comp2.connected.insert(comp1)
+
+            for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
+                cells[pos.y][pos.x].cable = Cable(
+                    compType: comp1.type, direction: Util.fromDir(dir: dir),
+                    comp1: comp1, comp2: comp2
+                )
+            }
         }
     }
     
@@ -167,14 +204,16 @@ extension Field {
         return nil
     }
     
-    func hasCable(
+    func hasConflictedCable(
         from: Pos,
         to: Pos,
-        allowedCable: Cable? = nil
+        allowedCompType: Int,
+        allowedDirection: Direction
     ) -> Bool {
         let path = [from] + Util.getBetweenPos(from: from, to: to) + [to]
         for pos in path {
-            if let cable = cell(pos: pos).cable {
+            if let cable = cell(pos: pos).cable,
+               cable.compType != allowedCompType || cable.direction != allowedDirection {
                 return true
             }
         }

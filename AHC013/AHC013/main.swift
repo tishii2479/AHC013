@@ -16,6 +16,7 @@ func main() {
     }
     IO.output("\(connects.count)")
     for connect in connects {
+//        IO.log(connect.comp1.id, connect.comp2.id, connect.comp1.pos, connect.comp2.pos)
         IO.output(connect.outValue)
     }
     
