@@ -102,7 +102,7 @@ struct Move: Command {
     }
 }
 
-struct Connect: Command, Hashable {
+struct Connect: Command {
     var comp1: Computer
     var comp2: Computer
     
@@ -114,7 +114,9 @@ struct Connect: Command, Hashable {
     var outValue: String {
         "\(comp1.pos.y) \(comp1.pos.x) \(comp2.pos.y) \(comp2.pos.x)"
     }
-    
+}
+
+extension Connect: Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(comp1)
         hasher.combine(comp2)
@@ -123,7 +125,7 @@ struct Connect: Command, Hashable {
 
 extension Connect: Equatable {
     static func == (lhs: Connect, rhs: Connect) -> Bool {
-        return lhs.hashValue == rhs.hashValue
+        lhs.hashValue == rhs.hashValue
     }
 }
 

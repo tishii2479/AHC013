@@ -96,7 +96,7 @@ class Field {
     
     func performConnect(connect: Connect, movedComp: Computer? = nil) {
         let comp1 = connect.comp1, comp2 = connect.comp2
-//        IO.log("connect:", comp1.pos, comp2.pos, movedComp?.pos, type: .debug)
+//        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
                 
         guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
             IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
@@ -106,7 +106,6 @@ class Field {
         if let movedComp = movedComp,
            let cable = cell(pos: movedComp.pos).cable,
            cable.compType == movedComp.type {
-            IO.log(cable.comp1.pos, cable.comp2.pos, movedComp.pos)
             // movedComp is moved in a cable
             // update connected information, and remove cable at movedComp.pos
             cable.comp1.connected.remove(cable.comp2)
@@ -160,6 +159,7 @@ class Field {
 }
 
 extension Field {
+    // TODO: refactor, `ignoreComp` is not needed?
     func getCluster(ofComputer comp: Computer, ignoreComp: Computer? = nil) -> Set<Computer> {
         var cluster = Set<Computer>()
         cluster.insert(comp)

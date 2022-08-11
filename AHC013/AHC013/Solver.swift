@@ -40,7 +40,7 @@ class SolverV1 {
             return a.0 < b.0
         })
         
-        for (evValue, (comp1, comp2)) in distPair {
+        for (_, (comp1, comp2)) in distPair {
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
                 continue
             }
@@ -49,6 +49,7 @@ class SolverV1 {
             var selectedMoveComp: Computer? = nil
 
             if let intersections = Util.intersections(comp1.pos, comp2.pos) {
+                let currentCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
                 for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
                     guard !fromComp.isFixed else { continue }
                     for inter in intersections {
@@ -59,7 +60,10 @@ class SolverV1 {
                            let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
                            let moves2 = movesToClear(from: inter, to: toComp.pos, ignorePos: ignorePos) {
                             let moves = moves1 + moveToInter + moves2
-                            if selectedMoves == nil || moves.count < selectedMoves!.count {
+                            let didImproved = selectedMoves == nil || moves.count < selectedMoves!.count
+                            let newCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
+                            let didSustainCluster = currentCluster.isSubset(of: newCluster)
+                            if didImproved && didSustainCluster {
                                 selectedMoves = moves
                                 selectedMoveComp = fromComp
                             }
