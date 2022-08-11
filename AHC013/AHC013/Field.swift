@@ -79,18 +79,29 @@ class Field {
             IO.log("Could not find computer at: \(move.pos)", type: .warn)
             return
         }
+        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
         moveComputer(comp: comp, to: comp.pos + move.dir)
     }
     
     func performConnect(connect: Connect) {
-        connect.comp1.connected.append(connect.comp2)
-        connect.comp2.connected.append(connect.comp1)
+        let comp1 = connect.comp1, comp2 = connect.comp2
+        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
+        comp1.connected.append(comp2)
+        comp2.connected.append(comp1)
+        
+        for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
+            guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
+                IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
+                return
+            }
+            cells[pos.y][pos.x].cable = Cable(compType: comp1.type, direction: Util.fromDir(dir: dir))
+        }
     }
     
     private func moveComputer(comp: Computer, to: Pos) {
+        cells[to.y][to.x].computer = comp
         cells[comp.pos.y][comp.pos.x].computer = nil
         comp.pos = to
-        cells[comp.pos.y][comp.pos.x].computer = comp
     }
 }
 
@@ -119,10 +130,10 @@ extension Field {
         return cluster.contains(comp2)
     }
     
-    func findNearestEmptyCell(pos: Pos, loopLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
+    func findNearestEmptyCell(pos: Pos, trialLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
         var q = Queue<Pos>()
         q.push(pos)
-        for _ in 0 ..< loopLimit {
+        for _ in 0 ..< trialLimit {
             guard let v = q.pop() else {
                 return nil
             }
@@ -144,11 +155,12 @@ extension Field {
         to: Pos,
         allowedCable: Cable? = nil
     ) -> Bool {
-        let path = Util.getBetweenPos(from: from, to: to)
+        let path = [from] + Util.getBetweenPos(from: from, to: to) + [to]
         for pos in path {
-            if let cable = cell(pos: pos).cable,
-               let allowedCable = allowedCable,
-               cable != allowedCable {
+//            if let cable = cell(pos: pos).cable,
+//               let allowedCable = allowedCable,
+//               cable != allowedCable {
+            if let cable = cell(pos: pos).cable {
                 return true
             }
         }

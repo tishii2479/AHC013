@@ -82,4 +82,21 @@ class Util {
         }
         return [Pos(x: a.x, y: b.y), Pos(x: b.x, y: a.y)]
     }
+    
+    static func getMoves(from: Pos, to: Pos) -> [Move]? {
+        guard let dir = toDir(from: from, to: to) else {
+            IO.log("\(from), \(to) is not aligned", type: .warn)
+            return nil
+        }
+        
+        var cPos = from
+        var ret = [Move]()
+        
+        while cPos != to {
+            ret.append(Move(pos: cPos, dir: dir))
+            cPos += dir
+        }
+        
+        return ret
+    }
 }

@@ -7,6 +7,9 @@ class Computer {
     var type: Int
     var pos: Pos
     var connected: [Computer] = []
+    var isFixed: Bool {
+        connected.count > 0
+    }
     
     init(id: Int, type: Int, pos: Pos) {
         self.id = id

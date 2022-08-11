@@ -14,7 +14,6 @@ class SolverV1 {
 
     func solve() -> ([Move], [Connect]) {
         connectOneCluster(type: 1)
-        IO.log(moves, connects)
         return (moves, connects)
     }
     
@@ -41,27 +40,29 @@ class SolverV1 {
         })
         
         for (evValue, (comp1, comp2)) in distPair {
-            if evValue > 2 {
-                break
-            }
-            IO.log(evValue, comp1.pos, comp2.pos)
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
+                IO.log("Same cluster", comp1.pos, comp2.pos)
                 continue
             }
             
             var selectedMoves: [Move]? = nil
 
             if let intersections = Util.intersections(comp1.pos, comp2.pos) {
-                IO.log(intersections, type: .debug)
                 for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
+                    guard !fromComp.isFixed else {
+                        continue
+                    }
                     for inter in intersections {
+                        let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
+                            Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
                         guard checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
-                              let moves1 = movesToClear(from: fromComp.pos, to: inter, addEnd: true),
-                              let moves2 = movesToClear(from: inter, to: toComp.pos) else {
+                              let moves1 = movesToClear(from: fromComp.pos, to: inter, ignorePos: ignorePos, addEnd: true),
+                              let moveToInter = Util.getMoves(from: fromComp.pos, to: inter),
+                              let moves2 = movesToClear(from: inter, to: toComp.pos, ignorePos: ignorePos) else {
                             continue
                         }
 
-                        let moves = moves1 + moves2
+                        let moves = moves1 + moveToInter + moves2
                         if selectedMoves == nil || moves.count < selectedMoves!.count {
                             selectedMoves = moves
                         }
@@ -70,10 +71,9 @@ class SolverV1 {
             }
             else {
                 // is already aligned
-                IO.log(checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type), type: .debug)
-                IO.log(movesToClear(from: comp1.pos, to: comp2.pos, addEnd: true), type: .debug)
+                let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: comp2.pos) + [comp2.pos]
                 guard checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
-                      let moves = movesToClear(from: comp1.pos, to: comp2.pos, addEnd: true) else {
+                      let moves = movesToClear(from: comp1.pos, to: comp2.pos, ignorePos: ignorePos) else {
                     continue
                 }
                 selectedMoves = moves
@@ -99,36 +99,37 @@ class SolverV1 {
     
     private func performCommand(command: Command) {
         if let move = command as? Move {
-            IO.log(move.pos, move.pos + move.dir, type: .debug)
             moves.append(move)
             field.performMove(move: move)
         }
         else if let connect = command as? Connect {
-            IO.log(connect.comp1.pos, connect.comp2.pos, type: .debug)
             connects.append(connect)
             field.performConnect(connect: connect)
         }
     }
     
-    private func movesToClear(from: Pos, to: Pos, addEnd: Bool = false) -> [Move]? {
+    func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], addEnd: Bool = false) -> [Move]? {
         let path = Util.getBetweenPos(from: from, to: to, addEnd: addEnd)
         var moves = [Move]()
-
         for pos in path {
             guard field.cell(pos: pos).isComputer else { continue }
             
-            guard let emptyPos = field.findNearestEmptyCell(pos: pos, ignorePos: path) else {
-                IO.log("Could not find empty cell")
+            guard let emptyPos = field.findNearestEmptyCell(pos: pos, ignorePos: ignorePos) else {
+                IO.log("Could not find empty cell", type: .warn)
                 return nil
             }
-
-            moves.append(contentsOf: movesToEmptyCell(from: pos, to: emptyPos))
+            
+            guard let movesToEmpty = movesToEmptyCell(from: pos, to: emptyPos) else {
+                return nil
+            }
+            
+            IO.log(pos, emptyPos, movesToEmpty, path + [from, to])
+            moves.append(contentsOf: movesToEmpty)
         }
-
         return moves
     }
     
-    private func movesToEmptyCell(from: Pos, to: Pos) -> [Move] {
+    func movesToEmptyCell(from: Pos, to: Pos, trialLimit: Int = 20) -> [Move]? {
         let dy = to.y - from.y
         let dx = to.x - from.x
         
@@ -141,23 +142,40 @@ class SolverV1 {
         }
         
         if dx < 0 {
-            dirs.append(contentsOf: [Dir](repeating: .left, count: abs(dy)))
+            dirs.append(contentsOf: [Dir](repeating: .left, count: abs(dx)))
         }
         else if dx > 0 {
-            dirs.append(contentsOf: [Dir](repeating: .right, count: abs(dy)))
+            dirs.append(contentsOf: [Dir](repeating: .right, count: abs(dx)))
         }
         
         // TODO: select optimal order
-        dirs.shuffle()
+        
+        for _ in 0 ..< trialLimit {
+            dirs.shuffle()
 
-        var cPos: Pos = from
-        var ret = [Move]()
-        
-        for dir in dirs {
-            ret.append(Move(pos: cPos, dir: dir))
-            cPos += dir
+            var cPos: Pos = from
+            var disallowedMove = false
+            var ret = [Move]()
+            
+            for dir in dirs {
+                if let comp = field.cell(pos: cPos).computer,
+                   comp.isFixed {
+                    disallowedMove = true
+                    break
+                }
+                if field.cell(pos: cPos).isCabled {
+                    disallowedMove = true
+                    break
+                }
+                ret.append(Move(pos: cPos, dir: dir))
+                cPos += dir
+            }
+            
+            if !disallowedMove {
+                return ret.reversed()
+            }
         }
-        
-        return ret.reversed()
+            
+        return nil
     }
 }
