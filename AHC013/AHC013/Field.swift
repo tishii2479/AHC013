@@ -95,45 +95,19 @@ class Field {
 }
 
 extension Field {
-    func getNearestComputer(pos: Pos, dir: Dir, ignoreComp: Computer? = nil) -> Computer? {
-        var cPos = pos + dir
+    func getCluster(ofComputer comp: Computer, ignoreComp: Computer? = nil) -> Set<Computer> {
+        var cluster = Set<Computer>()
+        cluster.insert(comp)
         
-        while cPos.isValid(boardSize: size) {
-            let cell = cell(pos: cPos)
-            if let computer = cell.computer,
-               computer != ignoreComp {
-                return computer
-            }
-            if cell.isCabled {
-                return nil
-            }
-            cPos += dir
-        }
-        return nil
-    }
-    
-    func getCluster(ofComputer comp: Computer, ignoreComp: Computer? = nil) -> Set<Int> {
-        var cluster = Set<Int>()
-        cluster.insert(comp.id)
+        var q = Queue<Computer>()
+        q.push(comp)
         
-        var q = Queue<Pos>()
-        q.push(comp.pos)
-        
-        while let pos = q.pop() {
-            for dir in Dir.all {
-                guard let adjacentCompId = getNearestComputer(pos: pos, dir: dir, ignoreComp: ignoreComp)?.id else {
-                    continue
-                }
-                guard computers[adjacentCompId].type == comp.type,
-                      !cluster.contains(adjacentCompId) else {
-                    continue
-                }
-                guard ignoreComp != computers[adjacentCompId] else {
-                    continue
-                }
-                
-                q.push(computers[adjacentCompId].pos)
-                cluster.insert(adjacentCompId)
+        while let comp = q.pop() {
+            for connectedComp in comp.connected {
+                guard !cluster.contains(connectedComp),
+                      ignoreComp != connectedComp else { continue }
+                q.push(connectedComp)
+                cluster.insert(connectedComp)
             }
         }
         
@@ -142,48 +116,7 @@ extension Field {
     
     func isInSameCluster(comp1: Computer, comp2: Computer) -> Bool {
         let cluster = getCluster(ofComputer: comp1)
-        return cluster.contains(comp2.id)
-    }
-    
-    func calcMoveDiff(comp: Computer, to: Pos) -> Int {
-        let removalScore = calcScoreDiff(comp: comp)
-        
-        let prevPos = comp.pos
-        
-        // Create temporary field by changing comp.pos
-        moveComputer(comp: comp, to: to)
-        let movedScore = calcScoreDiff(comp: comp)
-        moveComputer(comp: comp, to: prevPos)
-        
-        print(removalScore, movedScore, prevPos, to)
-        return movedScore - removalScore
-    }
-
-    // Calc diff of (added - removed)
-    func calcScoreDiff(comp: Computer) -> Int {
-        var currentClusters = Set<Set<Int>>()
-        for dir in Dir.all {
-            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir) else {
-                continue
-            }
-            currentClusters.insert(getCluster(ofComputer: adjComp))
-        }
-        var removedClusters = Set<Set<Int>>()
-        for dir in Dir.all {
-            guard let adjComp = getNearestComputer(pos: comp.pos, dir: dir, ignoreComp: comp) else {
-                continue
-            }
-            removedClusters.insert(getCluster(ofComputer: adjComp, ignoreComp: comp))
-        }
-        
-        var scoreDiff: Int = 0
-        for cluster in currentClusters {
-            scoreDiff += cluster.count * (cluster.count - 1) / 2
-        }
-        for cluster in removedClusters {
-            scoreDiff -= cluster.count * (cluster.count - 1) / 2
-        }
-        return scoreDiff
+        return cluster.contains(comp2)
     }
     
     func findNearestEmptyCell(pos: Pos, loopLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
