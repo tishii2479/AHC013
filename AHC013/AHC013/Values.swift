@@ -6,6 +6,7 @@ class Computer {
     var id: Int
     var type: Int
     var pos: Pos
+    var connected: [Computer] = []
     
     init(id: Int, type: Int, pos: Pos) {
         self.id = id
@@ -17,6 +18,32 @@ class Computer {
 extension Computer: Equatable {
     static func == (lhs: Computer, rhs: Computer) -> Bool {
         lhs.id == rhs.id
+    }
+}
+
+extension Computer: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+enum Direction {
+    case horizontal
+    case vertical
+}
+
+struct Cable {
+    var compType: Int
+    var direction: Direction
+}
+
+extension Cable {
+    static func == (lhs: Cable, rhs: Cable) -> Bool {
+        lhs.compType == rhs.compType && lhs.direction == rhs.direction
+    }
+
+    static func != (lhs: Cable, rhs: Cable) -> Bool {
+        !(lhs == rhs)
     }
 }
 
@@ -54,6 +81,28 @@ enum Dir {
         case .down:
             return .up
         }
+    }
+}
+
+protocol Command {
+    var outValue: String { get }
+}
+
+struct Move: Command {
+    var pos: Pos
+    var dir: Dir
+    
+    var outValue: String {
+        "\(pos.y) \(pos.x) \((pos + dir).y) \((pos + dir).x)"
+    }
+}
+
+struct Connect: Command {
+    var comp1: Computer
+    var comp2: Computer
+
+    var outValue: String {
+        "\(comp1.pos.y) \(comp1.pos.x) \(comp2.pos.y) \(comp2.pos.x)"
     }
 }
 

@@ -2,6 +2,7 @@ src_dir = "AHC013/AHC013/"
 files = [
     "Values.swift",
     "main.swift",
+    "Solver.swift",
     "Field.swift",
     "Util.swift",
     "Queue.swift",

@@ -10,7 +10,7 @@ import XCTest
 class FieldTest: XCTestCase {
 
     func testAdjacentComputer() throws {
-        let fieldSize = 5
+        let size = 5
         let strs = [
             "00000",
             "00200",
@@ -18,7 +18,7 @@ class FieldTest: XCTestCase {
             "20201",
             "00100"
         ]
-        let field = Field(size: fieldSize)
+        let field = Field(size: size)
         field.parseField(strs: strs)
         
         XCTAssertEqual(
@@ -44,7 +44,7 @@ class FieldTest: XCTestCase {
     }
     
     func testCluster() throws {
-        let fieldSize = 5
+        let size = 5
         let strs = [
             "00000",
             "00201",
@@ -52,7 +52,7 @@ class FieldTest: XCTestCase {
             "20231",
             "00101"
         ]
-        let field = Field(size: fieldSize)
+        let field = Field(size: size)
         field.parseField(strs: strs)
             
         XCTAssertEqual(
@@ -95,7 +95,7 @@ class FieldTest: XCTestCase {
     }
     
     func testCalcScore() throws {
-        let fieldSize = 5
+        let size = 5
         let strs = [
             "00000",
             "00201",
@@ -103,7 +103,7 @@ class FieldTest: XCTestCase {
             "20231",
             "00101"
         ]
-        let field = Field(size: fieldSize)
+        let field = Field(size: size)
         field.parseField(strs: strs)
         
         XCTAssertEqual(
@@ -129,6 +129,29 @@ class FieldTest: XCTestCase {
         XCTAssertEqual(
             field.calcMoveDiff(comp: field.computers[3], to: Pos(x: 3, y: 2)),
             -4
+        )
+    }
+    
+    func testCalcScore2() throws {
+        let size = 5
+        let strs = [
+            "10101",
+            "00000",
+            "10101",
+            "00000",
+            "10101"
+        ]
+        let field = Field(size: size)
+        field.parseField(strs: strs)
+        
+        XCTAssertEqual(
+            field.calcMoveDiff(comp: field.computers[4], to: Pos(x: 1, y: 1)),
+            -8
+        )
+        
+        XCTAssertEqual(
+            field.calcMoveDiff(comp: field.computers[4], to: Pos(x: 1, y: 2)),
+            0
         )
     }
 
