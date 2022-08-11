@@ -18,6 +18,18 @@ func main() {
     for connect in connects {
         IO.output(connect.outValue)
     }
+    
+//    for i in 1 ... moves.count + connects.count {
+//        IO.output("\(min(i, moves.count))")
+//        for j in 0 ..< min(i, moves.count) {
+//            IO.output(moves[j].outValue)
+//        }
+//        IO.output("\(max(0, i - moves.count)")
+//        if i <= moves.count { continue }
+//        for j in 0 ..< i - moves.count {
+//            IO.output(connects[j].outValue)
+//        }
+//    }
 }
 
 main()

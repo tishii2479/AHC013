@@ -7,6 +7,7 @@ class SolverV1 {
     private let field: Field
     private var moves: [Move] = []
     private var connects: [Connect] = []
+    private var temporaryMoves: [Move] = []
 
     init(field: Field) {
         self.field = field
@@ -39,51 +40,46 @@ class SolverV1 {
             return a.0 < b.0
         })
         
-        for (evValue, (comp1, comp2)) in distPair {
+        for (_, (comp1, comp2)) in distPair {
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
-                IO.log("Same cluster", comp1.pos, comp2.pos)
                 continue
             }
+            IO.log(comp1.pos, comp2.pos)
             
             var selectedMoves: [Move]? = nil
 
             if let intersections = Util.intersections(comp1.pos, comp2.pos) {
                 for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
-                    guard !fromComp.isFixed else {
-                        continue
-                    }
+                    guard !fromComp.isFixed else { continue }
                     for inter in intersections {
                         let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
                             Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
-                        guard checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
-                              let moves1 = movesToClear(from: fromComp.pos, to: inter, ignorePos: ignorePos, addEnd: true),
-                              let moveToInter = Util.getMoves(from: fromComp.pos, to: inter),
-                              let moves2 = movesToClear(from: inter, to: toComp.pos, ignorePos: ignorePos) else {
-                            continue
+                        if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
+                           let moves1 = movesToClear(from: fromComp.pos, to: inter, ignorePos: ignorePos, addEnd: true),
+                           let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
+                           let moves2 = movesToClear(from: inter, to: toComp.pos, ignorePos: ignorePos) {
+                            let moves = moves1 + moveToInter + moves2
+                            if selectedMoves == nil || moves.count < selectedMoves!.count {
+                                selectedMoves = moves
+                            }
                         }
-
-                        let moves = moves1 + moveToInter + moves2
-                        if selectedMoves == nil || moves.count < selectedMoves!.count {
-                            selectedMoves = moves
-                        }
+                        reverseTemporaryMoves()
                     }
                 }
             }
             else {
                 // is already aligned
                 let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: comp2.pos) + [comp2.pos]
-                guard checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
-                      let moves = movesToClear(from: comp1.pos, to: comp2.pos, ignorePos: ignorePos) else {
-                    continue
+                if checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
+                   let moves = movesToClear(from: comp1.pos, to: comp2.pos, ignorePos: ignorePos) {
+                    selectedMoves = moves
                 }
-                selectedMoves = moves
+                reverseTemporaryMoves()
             }
             
             if let moves = selectedMoves {
-                for move in moves {
-                    performCommand(command: move)
-                }
-                performCommand(command: Connect(comp1: comp1, comp2: comp2))
+                performMoves(moves: moves)
+                performConnect(connect: Connect(comp1: comp1, comp2: comp2))
             }
         }
     }
@@ -97,36 +93,33 @@ class SolverV1 {
         return !field.hasCable(from: from, to: to, allowedCable: allowedCable)
     }
     
-    private func performCommand(command: Command) {
-        if let move = command as? Move {
-            moves.append(move)
-            field.performMove(move: move)
+    func moveToInter(from: Pos, inter: Pos) -> [Move]? {
+        guard let interMoves = Util.getMoves(from: from, to: inter) else {
+            return nil
         }
-        else if let connect = command as? Connect {
-            connects.append(connect)
-            field.performConnect(connect: connect)
-        }
+        performTemporaryMoves(moves: interMoves)
+        return interMoves
     }
     
     func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], addEnd: Bool = false) -> [Move]? {
         let path = Util.getBetweenPos(from: from, to: to, addEnd: addEnd)
-        var moves = [Move]()
+        var clearMoves = [Move]()
         for pos in path {
             guard field.cell(pos: pos).isComputer else { continue }
             
             guard let emptyPos = field.findNearestEmptyCell(pos: pos, ignorePos: ignorePos) else {
-                IO.log("Could not find empty cell", type: .warn)
+                IO.log("Could not find empty cell")
                 return nil
             }
             
             guard let movesToEmpty = movesToEmptyCell(from: pos, to: emptyPos) else {
                 return nil
             }
-            
-            IO.log(pos, emptyPos, movesToEmpty, path + [from, to])
-            moves.append(contentsOf: movesToEmpty)
+
+            performTemporaryMoves(moves: movesToEmpty)
+            clearMoves.append(contentsOf: movesToEmpty)
         }
-        return moves
+        return clearMoves
     }
     
     func movesToEmptyCell(from: Pos, to: Pos, trialLimit: Int = 20) -> [Move]? {
@@ -163,10 +156,6 @@ class SolverV1 {
                     disallowedMove = true
                     break
                 }
-                if field.cell(pos: cPos).isCabled {
-                    disallowedMove = true
-                    break
-                }
                 ret.append(Move(pos: cPos, dir: dir))
                 cPos += dir
             }
@@ -177,5 +166,33 @@ class SolverV1 {
         }
             
         return nil
+    }
+    
+    private func performTemporaryMoves(moves: [Move]) {
+        moves.forEach { performTemporaryMove(move: $0) }
+    }
+
+    private func performTemporaryMove(move: Move) {
+        temporaryMoves.append(move)
+        field.performMove(move: move)
+    }
+    
+    private func reverseTemporaryMoves() {
+        field.reverseMoves(moves: temporaryMoves)
+        temporaryMoves.removeAll()
+    }
+    
+    private func performMoves(moves: [Move]) {
+        moves.forEach { performMove(move: $0) }
+    }
+    
+    private func performMove(move: Move) {
+        moves.append(move)
+        field.performMove(move: move)
+    }
+    
+    private func performConnect(connect: Connect) {
+        connects.append(connect)
+        field.performConnect(connect: connect)
     }
 }

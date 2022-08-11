@@ -74,13 +74,24 @@ class Field {
         cells[pos.y][pos.x]
     }
     
+    func reverseMoves(moves: [Move]) {
+        for move in moves.reversed() {
+            performMove(move: Move(pos: move.pos + move.dir, dir: move.dir.rev))
+        }
+    }
+    
     func performMove(move: Move) {
         guard let comp = cell(pos: move.pos).computer else {
-            IO.log("Could not find computer at: \(move.pos)", type: .warn)
-            return
+            IO.log("Could not find computer at: \(move.pos)", type: .error)
+            dump()
+            fatalError()
         }
         IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
         moveComputer(comp: comp, to: comp.pos + move.dir)
+    }
+    
+    func performMoves(moves: [Move]) {
+        moves.forEach { performMove(move: $0) }
     }
     
     func performConnect(connect: Connect) {
@@ -99,6 +110,11 @@ class Field {
     }
     
     private func moveComputer(comp: Computer, to: Pos) {
+        guard !cell(pos: to).isComputer else {
+            IO.log("\(to) is not empty", type: .error)
+            dump()
+            fatalError()
+        }
         cells[to.y][to.x].computer = comp
         cells[comp.pos.y][comp.pos.x].computer = nil
         comp.pos = to
@@ -165,5 +181,22 @@ extension Field {
             }
         }
         return false
+    }
+    
+    func dump() {
+        for i in 0 ..< size {
+            for j in 0 ..< size {
+                if let comp = cell(pos: Pos(x: j, y: i)).computer {
+                    IO.log(comp.type, terminator: "", type: .none)
+                }
+                else if let cable = cell(pos: Pos(x: j, y: i)).cable {
+                    IO.log("-", terminator: "", type: .none)
+                }
+                else {
+                    IO.log(0, terminator: "", type: .none)
+                }
+            }
+            IO.log("", type: .none)
+        }
     }
 }
