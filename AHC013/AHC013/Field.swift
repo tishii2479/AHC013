@@ -110,7 +110,8 @@ class Field {
     }
     
     private func moveComputer(comp: Computer, to: Pos) {
-        guard !cell(pos: to).isComputer else {
+        guard cell(pos: to).isEmpty
+                || cell(pos: to).cable?.compType == comp.type else {
             IO.log("\(to) is not empty", type: .error)
             dump()
             fatalError()
@@ -173,9 +174,6 @@ extension Field {
     ) -> Bool {
         let path = [from] + Util.getBetweenPos(from: from, to: to) + [to]
         for pos in path {
-//            if let cable = cell(pos: pos).cable,
-//               let allowedCable = allowedCable,
-//               cable != allowedCable {
             if let cable = cell(pos: pos).cable {
                 return true
             }
@@ -189,7 +187,7 @@ extension Field {
                 if let comp = cell(pos: Pos(x: j, y: i)).computer {
                     IO.log(comp.type, terminator: "", type: .none)
                 }
-                else if let cable = cell(pos: Pos(x: j, y: i)).cable {
+                else if let _ = cell(pos: Pos(x: j, y: i)).cable {
                     IO.log("-", terminator: "", type: .none)
                 }
                 else {
