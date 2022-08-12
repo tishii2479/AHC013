@@ -53,7 +53,7 @@ class Util {
     
         var cPos = from
         guard let dir = getDir(from: from, to: to).first else {
-            IO.log("Could not get dir", type: .warn)
+            IO.log("Could not get dir for \(from), \(to)", type: .warn)
             return ret
         }
     
@@ -84,6 +84,9 @@ class Util {
     }
     
     static func getMoves(from: Pos, to: Pos) -> [Move]? {
+        guard from != to else {
+            return []
+        }
         guard let dir = toDir(from: from, to: to) else {
             IO.log("\(from), \(to) is not aligned", type: .warn)
             return nil

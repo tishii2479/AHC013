@@ -273,7 +273,7 @@ extension Field {
 
         for _ in 0 ..< loopLimit {
             guard let v = q.pop() else {
-                return ret
+                break
             }
             for dir in Dir.all {
                 let nextPos = v + dir
@@ -295,6 +295,25 @@ extension Field {
         return ret.sorted(by: { (a, b) in
             return a.0 < b.0
         })
+    }
+    
+    func movable(comp: Computer, moveLimit: Int = 10) -> [Pos] {
+        var ret: [Pos] = [comp.pos]
+        for dir in Dir.all {
+            var cPos = comp.pos
+            guard comp.isMovable(dir: dir) else { continue }
+            
+            for _ in 0 ..< moveLimit {
+                let nextPos = cPos + dir
+                guard nextPos.isValid(boardSize: size),
+                      cell(pos: cPos + dir).isEmpty else {
+                    continue
+                }
+                ret.append(cPos + dir)
+                cPos += dir
+            }
+        }
+        return ret
     }
 
     func dump() {

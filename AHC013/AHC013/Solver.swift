@@ -23,7 +23,6 @@ class SolverV1 {
         connectOneClusterWithOtherComputer(type: 1)
 
         while currentCommands < field.computerTypes * 100 && isInTime() {
-            IO.log(currentCommands)
             connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
         }
         return (performedMoves, Array(connects))
@@ -53,59 +52,54 @@ class SolverV1 {
             let cluster2 = field.getCluster(ofComputer: comp2)
             let currentScore = cluster1.calcScore() + cluster2.calcScore()
             var newCluster = cluster1.merge(cluster2)
+            var bestConnects = [Connect]()
+            var bestMoves = [Move]()
+            var bestImprovedScore = 0
             
-            if Util.isAligned(comp1.pos, comp2.pos) {
-                // oxo
-                if dist == 2 {
-                    let center = Pos(x: (comp1.pos + comp2.pos).x / 2, y: (comp1.pos + comp2.pos).y / 2)
-                    if let comp = field.cell(pos: center).computer {
-                        if newCluster.getScore(addType: comp.type) > currentScore {
-                            performConnect(connect: Connect(comp1: comp1, comp2: comp))
-                            performConnect(connect: Connect(comp1: comp2, comp2: comp))
+            IO.log("Check:", comp1.pos, comp2.pos)
+            for pos1 in field.movable(comp: comp1, moveLimit: 3) {
+                for pos2 in field.movable(comp: comp2, moveLimit: 3) {
+                    guard pos1 != pos2 else { continue }
+                    var cPos = pos1
+                    var cComp = comp1
+                    var ok = true
+                    var tempConnects = [Connect]()
+                    var connectedComps = [Computer]()
+                    IO.log(pos1, pos2, comp1.pos, comp2.pos)
+                        
+                    // TODO: find optimal
+                    
+                    for dir in Util.dirsForPath(from: pos1, to: pos2) {
+                        let nextPos = cPos + dir
+                        guard nextPos != comp1.pos,
+                              let comp = field.cell(pos: nextPos).computer else {
+                            ok = false
+                            break
                         }
+                        connectedComps.append(comp)
+                        tempConnects.append(Connect(comp1: cComp, comp2: comp))
+                        cComp = comp
+                        cPos += dir
                     }
-                }
-                else if dist == 3 {
-                    // oxxo
-                    var comps = [Computer]()
-                    for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
-                        if let comp = field.cell(pos: pos).computer {
-                            comps.append(comp)
-                        }
-                    }
-                    guard comps.count > 0 else {
-                        IO.log("No computer between \(comp1.pos) \(comp2.pos)", type: .warn)
-                        continue
-                    }
-
-                    let newScore = newCluster.getScore(addTypes: comps.map { $0.type })
-                    IO.log(newScore, currentScore)
-                    comps.insert(comp1, at: 0)
-                    comps.append(comp2)
-                    if newScore > currentScore {
-                        for i in 0 ..< comps.count - 1 {
-                            IO.log(comps[i].pos, comps[i+1].pos)
-                            performConnect(connect: Connect(comp1: comps[i], comp2: comps[i + 1]))
-                        }
+                    guard ok else { continue }
+                    
+                    let newComputerTypes = connectedComps.filter{ $0.type != comp1.type }.map{ $0.type }
+                    let improvedScore = newCluster.getScore(addTypes: newComputerTypes) - currentScore
+                    IO.log(pos1, pos2, comp1.pos, comp2.pos, improvedScore)
+                    if let moves1 = Util.getMoves(from: comp1.pos, to: pos1),
+                       let moves2 = Util.getMoves(from: comp2.pos, to: pos2),
+                       improvedScore > bestImprovedScore && currentCommands + moves1.count + moves2.count + tempConnects.count <= field.computerTypes * 100 {
+                        bestImprovedScore = improvedScore
+                        bestConnects = tempConnects
+                        bestMoves = moves1 + moves2
                     }
                 }
             }
-            else {
-                // ox
-                //  o
-                if dist == 2 {
-                    for inter in [
-                        Pos(x: comp1.pos.x, y: comp2.pos.y),
-                        Pos(x: comp2.pos.x, y: comp1.pos.y)
-                    ] {
-                        if let comp = field.cell(pos: inter).computer {
-                            if newCluster.getScore(addType: comp.type) > currentScore {
-                                performConnect(connect: Connect(comp1: comp1, comp2: comp))
-                                performConnect(connect: Connect(comp1: comp2, comp2: comp))
-                                break
-                            }
-                        }
-                    }
+            
+            if bestImprovedScore > 0 {
+                performMoves(moves: bestMoves)
+                for connect in bestConnects {
+                    performConnect(connect: connect)
                 }
             }
         }
@@ -139,7 +133,7 @@ class SolverV1 {
             return
         }
         
-        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
+//        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
         
         var q = Queue<Computer>()
         q.push(startComp)
@@ -207,9 +201,11 @@ class SolverV1 {
         }
         var selectedMoves: [Move]? = nil
         var selectedMoveComp: Computer? = nil
+        
+        let currentScore = field.getCluster(ofComputer: comp1).calcScore()
+            + field.getCluster(ofComputer: comp2).calcScore()
 
         if let intersections = Util.intersections(comp1.pos, comp2.pos) {
-            let currentCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
             for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
                 for inter in intersections {
                     let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
@@ -238,10 +234,10 @@ class SolverV1 {
                         let moves = moves1 + moveToInter + moves2
 
                         // TODO: consider cable length
-                        let didImproved = selectedMoves == nil || moves.count < selectedMoves!.count
+                        let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
                         let newCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
-                        let didSustainCluster = currentCluster.comps.isSubset(of: newCluster.comps)
-                        if didImproved && didSustainCluster {
+                        let didImproveScore = newCluster.calcScore() > currentScore
+                        if didImprovedMoves && didImproveScore {
                             selectedMoves = moves
                             selectedMoveComp = fromComp
                         }
@@ -256,7 +252,11 @@ class SolverV1 {
             if checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
                let moves = movesToClear(from: comp1.pos, to: comp2.pos,
                                         ignorePos: ignorePos, fixedComp: [comp1, comp2]) {
-                selectedMoves = moves
+                let newCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
+                let didImproveScore = newCluster.calcScore() > currentScore
+                if didImproveScore {
+                    selectedMoves = moves
+                }
             }
             reverseTemporaryMoves()
         }

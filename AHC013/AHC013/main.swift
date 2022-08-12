@@ -13,6 +13,11 @@ func output(moves: [Move], connects: [Connect], commandLimit: Int) {
         IO.output(connects[i].outValue)
     }
     
+    guard moveCount + connectCount > 0 else {
+        IO.log("moves and connects are empty..", type: .error)
+        return
+    }
+
     for i in 1 ... moveCount + connectCount {
         IO.output("\(min(i, moveCount))")
         for j in 0 ..< min(i, moveCount) {
@@ -24,7 +29,7 @@ func output(moves: [Move], connects: [Connect], commandLimit: Int) {
             IO.output(connects[j].outValue)
         }
     }
-    
+        
     IO.log("Moves:", moveCount, "Connects:", connectCount)
     IO.log("Runtime:", 2.7 - Date().distance(to: runLimitDate))
 }
