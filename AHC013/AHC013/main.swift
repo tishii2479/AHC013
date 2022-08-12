@@ -31,10 +31,10 @@ func output(moves: [Move], connects: [Connect], commandLimit: Int) {
     }
         
     IO.log("Moves:", moveCount, "Connects:", connectCount)
-    IO.log("Runtime:", 2.7 - Date().distance(to: runLimitDate))
 }
 
 func main() {
+    let startDate = Date()
     let a = IO.readIntArray()
     let fieldSize = a[0], computerTypes = a[1]
     var fieldInput = [String](repeating: "", count: fieldSize)
@@ -47,6 +47,8 @@ func main() {
     let (moves, connects) = solver.solve()
     
     output(moves: moves, connects: connects, commandLimit: computerTypes * 100)
+
+    IO.log("Runtime:", Date().timeIntervalSince(startDate))
 }
 
 main()

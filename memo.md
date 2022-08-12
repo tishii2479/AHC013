@@ -22,8 +22,16 @@
 - 焼けるっちゃ焼けそう
     - なるべくalignな配置を作る
     - ケーブルの総距離が短い繋げかたを探す
+- 時間は余っている時がある
 
 ## TODO:
+
+- リファクタリング!
+
+- 二つ目のクラスタでも跨いで作る
+
+- 2つ大きいクラスタを作った方がいい
+    - ある程度動かしてから焼きなましできそう
 
 - 近いクラスタを優先的に作る
     - 2つ目以降のクラスタを作るときはこれが必要
@@ -40,6 +48,8 @@
 - connectのundoができるようにしたい
 
 ## FIXME:
+
+- cableを縮めた時に回収していない
 
 ## 方針
 
@@ -114,3 +124,25 @@
 - 上、左、右、下のコンピュータを持つ
 - undo-可能なunionfindの導入
     - https://nyaannyaan.github.io/library/data-structure/rollback-union-find.hpp.html
+
+Worst cases:
+Case: 7, score: 2947
+Case: 37, score: 2974
+Case: 61, score: 3185
+Case: 59, score: 3382
+Case: 94, score: 3609
+Case: 46, score: 3678
+Case: 9, score: 3727
+Case: 25, score: 3788
+Case: 55, score: 4181
+Case: 87, score: 4607
+Best cases:
+Case: 19, score: 6604
+Case: 39, score: 6228
+Case: 99, score: 6227
+Case: 47, score: 6075
+Case: 83, score: 6067
+Case: 0, score: 6022
+Case: 38, score: 5940
+Case: 43, score: 5922
+Case: 64, score: 5912

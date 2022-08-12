@@ -10,6 +10,7 @@ def test_run(exe_file: str) -> None:
     hist_div = 20
     hist_w = score_max // hist_div
     hist = [0] * hist_div
+    scores = []
 
     for i in range(n):
         print(exe_file + ": " + str(i), file=sys.stderr)
@@ -43,10 +44,13 @@ def test_run(exe_file: str) -> None:
             sum += score
             total_sum += score
             hist[score // hist_w] += 1
+            scores.append((score, i))
 
         print("Average score for", in_file, sum / run)
         print("Average is", total_sum / (i + 1) / run)
     print("[RESULT] Average is", total_sum / n / run, ":", exe_file)
+
+    print("Score distribution:")
 
     for i in range(hist_div):
         print(
@@ -54,8 +58,18 @@ def test_run(exe_file: str) -> None:
             + " ~ "
             + str((i + 1) * hist_w - 1).zfill(4)
             + ": "
-            + "*" * hist[i]
+            + "o" * hist[i]
         )
+
+    print("Worst cases:")
+    scores.sort()
+
+    for i in range(10):
+        print(f"Case: {scores[i][1]}, score: {scores[i][0]}")
+
+    print("Best cases:")
+    for i in range(10):
+        print(f"Case: {scores[-i-1][1]}, score: {scores[-i-1][0]}")
 
 
 test_run("./main.o")
