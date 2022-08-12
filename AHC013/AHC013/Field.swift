@@ -296,7 +296,7 @@ extension Field {
             return a.0 < b.0
         })
     }
-    
+
     func dump() {
         for i in 0 ..< size {
             for j in 0 ..< size {

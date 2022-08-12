@@ -21,33 +21,42 @@ class SolverV1 {
         connectOneClusterMst(type: 1, distLimit: 5, costLimit: 5)
         connectOneClusterMst(type: 1, distLimit: 10, costLimit: 10)
         connectOneClusterWithOtherComputer(type: 1)
-        connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
-        connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
+
+        while currentCommands < field.computerTypes * 100 && isInTime() {
+            IO.log(currentCommands)
+            connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
+        }
         return (performedMoves, Array(connects))
     }
     
     func connectOneClusterWithOtherComputer(
-        type: Int, otherCompLimit: Int = 1, costLimit: Int = 10
+        type: Int, otherCompLimit: Int = 1,
+        distLimit: Int = 4, costLimit: Int = 10
     ) {
-        for comp1 in field.computerGroup[type] {
-            for comp2 in field.computerGroup[type] {
-                guard currentCommands + 2 <= field.computerTypes * 100 else {
-                    return
-                }
-                guard comp1.pos.dist(to: comp2.pos) == 2 else {
-                    continue
-                }
-                guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
-                    continue
-                }
-                
-                let cluster1 = field.getCluster(ofComputer: comp1)
-                let cluster2 = field.getCluster(ofComputer: comp2)
-                let currentScore = cluster1.calcScore() + cluster2.calcScore()
-                var newCluster = cluster1.merge(cluster2)
-                
-                if Util.isAligned(comp1.pos, comp2.pos) {
-                    // oxo
+        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+            let dy = abs(b.y - a.y)
+            let dx = abs(b.x - a.x)
+            return dy + dx
+        }
+
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
+        for (dist, (comp1, comp2)) in compPair {
+            guard isInTime() else { return }
+            guard currentCommands + dist <= field.computerTypes * 100 else {
+                return
+            }
+            guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
+                continue
+            }
+            
+            let cluster1 = field.getCluster(ofComputer: comp1)
+            let cluster2 = field.getCluster(ofComputer: comp2)
+            let currentScore = cluster1.calcScore() + cluster2.calcScore()
+            var newCluster = cluster1.merge(cluster2)
+            
+            if Util.isAligned(comp1.pos, comp2.pos) {
+                // oxo
+                if dist == 2 {
                     let center = Pos(x: (comp1.pos + comp2.pos).x / 2, y: (comp1.pos + comp2.pos).y / 2)
                     if let comp = field.cell(pos: center).computer {
                         if newCluster.getScore(addType: comp.type) > currentScore {
@@ -56,9 +65,35 @@ class SolverV1 {
                         }
                     }
                 }
-                else {
-                    // ox
-                    //  o
+                else if dist == 3 {
+                    // oxxo
+                    var comps = [Computer]()
+                    for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
+                        if let comp = field.cell(pos: pos).computer {
+                            comps.append(comp)
+                        }
+                    }
+                    guard comps.count > 0 else {
+                        IO.log("No computer between \(comp1.pos) \(comp2.pos)", type: .warn)
+                        continue
+                    }
+
+                    let newScore = newCluster.getScore(addTypes: comps.map { $0.type })
+                    IO.log(newScore, currentScore)
+                    comps.insert(comp1, at: 0)
+                    comps.append(comp2)
+                    if newScore > currentScore {
+                        for i in 0 ..< comps.count - 1 {
+                            IO.log(comps[i].pos, comps[i+1].pos)
+                            performConnect(connect: Connect(comp1: comps[i], comp2: comps[i + 1]))
+                        }
+                    }
+                }
+            }
+            else {
+                // ox
+                //  o
+                if dist == 2 {
                     for inter in [
                         Pos(x: comp1.pos.x, y: comp2.pos.y),
                         Pos(x: comp2.pos.x, y: comp1.pos.y)
@@ -88,6 +123,7 @@ class SolverV1 {
         var largestStartComp: Computer? = nil
         
         for _ in 0 ..< 30 {
+            guard isInTime() else { return }
             guard let type = types.randomElement(),
                   let startComp: Computer = field.computerGroup[type].randomElement() else {
                 continue
@@ -103,11 +139,12 @@ class SolverV1 {
             return
         }
         
-        IO.log("Selected: ", startComp.type, startComp.pos, largestClusterSize)
+        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
         
         var q = Queue<Computer>()
         q.push(startComp)
         while let comp = q.pop() {
+            guard isInTime() else { return }
             guard let nearComps = nearComputers[comp] else {
                 continue
             }
@@ -149,6 +186,7 @@ class SolverV1 {
         let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         
         for (dist, (comp1, comp2)) in compPair {
+            guard isInTime() else { return }
             let _ = connectCompIfPossible(
                 comp1: comp1, comp2: comp2,
                 dist: dist, distLimit: distLimit, costLimit: costLimit
@@ -254,7 +292,7 @@ class SolverV1 {
                 guard comp1 != comp2 else { continue }
                 
                 let dist = distF(comp1.pos, comp2.pos)
-                if dist < distLimit {
+                if dist <= distLimit {
                     compPair.append((dist, (comp1, comp2)))
                 }
             }
@@ -309,23 +347,7 @@ class SolverV1 {
     }
     
     func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
-        let dy = to.y - from.y
-        let dx = to.x - from.x
-        
-        var dirs: [Dir] = []
-        if dy < 0 {
-            dirs.append(contentsOf: [Dir](repeating: .up, count: abs(dy)))
-        }
-        else if dy > 0 {
-            dirs.append(contentsOf: [Dir](repeating: .down, count: abs(dy)))
-        }
-        
-        if dx < 0 {
-            dirs.append(contentsOf: [Dir](repeating: .left, count: abs(dx)))
-        }
-        else if dx > 0 {
-            dirs.append(contentsOf: [Dir](repeating: .right, count: abs(dx)))
-        }
+        var dirs = Util.dirsForPath(from: from, to: to)
         
         // TODO: select optimal order
         

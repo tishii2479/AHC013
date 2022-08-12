@@ -99,4 +99,25 @@ class Util {
         
         return ret
     }
+    
+    static func dirsForPath(from: Pos, to: Pos) -> [Dir] {
+        let dy = to.y - from.y
+        let dx = to.x - from.x
+        
+        var dirs: [Dir] = []
+        if dy < 0 {
+            dirs.append(contentsOf: [Dir](repeating: .up, count: abs(dy)))
+        }
+        else if dy > 0 {
+            dirs.append(contentsOf: [Dir](repeating: .down, count: abs(dy)))
+        }
+        
+        if dx < 0 {
+            dirs.append(contentsOf: [Dir](repeating: .left, count: abs(dx)))
+        }
+        else if dx > 0 {
+            dirs.append(contentsOf: [Dir](repeating: .right, count: abs(dx)))
+        }
+        return dirs
+    }
 }

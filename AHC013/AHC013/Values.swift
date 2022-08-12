@@ -69,11 +69,18 @@ struct Cluster {
     }
     
     mutating func getScore(addType: Int) -> Int {
+        getScore(addTypes: [addType])
+    }
+    
+    mutating func getScore(addTypes: [Int]) -> Int {
         // calc temporary
-        typeCounts[addType] += 1
+        for type in addTypes {
+            typeCounts[type] += 1
+        }
         let newScore = calcScore()
-        typeCounts[addType] -= 1
-        
+        for type in addTypes {
+            typeCounts[type] -= 1
+        }
         return newScore
     }
     
@@ -89,7 +96,6 @@ struct Cluster {
                 }
             }
         }
-        IO.log(typeCounts, score)
         return score
     }
     
