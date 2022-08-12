@@ -18,6 +18,10 @@ class Computer {
         self.pos = pos
     }
     
+    var isConnected: Bool {
+        connected.count > 0
+    }
+    
     func isMovable(dir: Dir) -> Bool {
         let direction = Util.fromDir(dir: dir)
         for comp in connected {

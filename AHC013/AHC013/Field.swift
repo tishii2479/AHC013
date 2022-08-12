@@ -208,11 +208,11 @@ extension Field {
         return cluster.contains(comp2)
     }
     
-    func findNearestEmptyCell(pos: Pos, trialLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
+    func findNearestEmptyCell(at: Pos, trialLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
         var q = Queue<Pos>()
         var seenPos = Set<Pos>()
-        q.push(pos)
-        seenPos.insert(pos)
+        q.push(at)
+        seenPos.insert(at)
         for _ in 0 ..< trialLimit {
             guard let v = q.pop() else {
                 return nil
@@ -256,6 +256,44 @@ extension Field {
             }
         }
         return false
+    }
+    
+    func getNearComputers(
+        aroundComp: Computer,
+        loopLimit: Int = 30,
+        dist: (Pos, Pos) -> Int
+    ) -> [(Int, Computer)] {
+        var ret = [(Int, Computer)]()
+        
+        var q = Queue<Pos>()
+        var seenPos = Set<Pos>()
+        q.push(aroundComp.pos)
+        seenPos.insert(aroundComp.pos)
+
+        for _ in 0 ..< loopLimit {
+            guard let v = q.pop() else {
+                return ret
+            }
+            for dir in Dir.all {
+                let nextPos = v + dir
+                if nextPos.isValid(boardSize: size)
+                    && !seenPos.contains(nextPos)
+                    && cell(pos: nextPos).computer?.isConnected != true
+                    && cell(pos: nextPos).cable == nil {
+                    q.push(nextPos)
+                    seenPos.insert(nextPos)
+                    
+                    if let comp = cell(pos: nextPos).computer,
+                       aroundComp.type == comp.type {
+                        ret.append((dist(aroundComp.pos, comp.pos), comp))
+                    }
+                }
+            }
+        }
+        
+        return ret.sorted(by: { (a, b) in
+            return a.0 < b.0
+        })
     }
     
     func dump() {
