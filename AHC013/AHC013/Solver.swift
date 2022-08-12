@@ -22,6 +22,8 @@ class SolverV1 {
         connectOneClusterMst(type: 1, distLimit: 50, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: 1)
         
+        optimizeConnection(type: 1)
+        
         IO.log(elapsedTime(), currentCommands)
         
         var costLimit = param.costLimit
@@ -34,6 +36,65 @@ class SolverV1 {
             costLimit += 1
         }
         return (performedMoves, Array(connects))
+    }
+    
+    func optimizeConnection(type: Int, considerComp: Int = 30) {
+        let center = Pos(x: field.size / 2, y: field.size / 2)
+        let compNearToCenter = field.computerGroup[type].sorted(by: { (a, b) in
+            a.pos.dist(to: center) < b.pos.dist(to: center)
+        })
+        let distF = { (a: Pos, b: Pos) -> Int in
+            if Util.isAligned(a, b) {
+                return -(a.dist(to: center) + b.dist(to: center))
+            }
+            return 0
+        }
+        let edgeCompPairs = getSortedCompPair(
+            type: type, distLimit: -field.size,
+            distF: distF
+        )
+        
+        for comp in compNearToCenter.prefix(considerComp) {
+            guard comp.pos.dist(to: center) <= field.size / 2 else {
+                return
+            }
+            for connectedComp in comp.connected {
+                guard isInTime() else { return }
+                guard comp.pos.dist(to: connectedComp.pos) > 1 else {
+                    continue
+                }
+
+                let connect = Connect(comp1: comp, comp2: connectedComp)
+                resetConnect(connect: connect)
+                
+                let cluster1 = field.getCluster(ofComputer: comp)
+                let cluster2 = field.getCluster(ofComputer: connectedComp)
+                var reconnected = false
+                
+                if cluster1.comps.count > 1 && cluster2.comps.count > 1 {
+                    for (dist, (comp1, comp2)) in edgeCompPairs {
+                        if comp1.connected.contains(comp2) {
+                            continue
+                        }
+                        let isInDifferentCluster = cluster1.comps.contains(comp1)
+                                                    != cluster1.comps.contains(comp2)
+                        if isInDifferentCluster && connectCompIfPossible(
+                            comp1: comp1, comp2: comp2, dist: dist,
+                            distLimit: 100, costLimit: 100
+                        ) {
+                            IO.log("disconnect: \(comp.pos), \(connectedComp.pos), connect: \(comp1.pos), \(comp2.pos), \(cluster1.comps.count), \(cluster2.comps.count)")
+                            reconnected = true
+                            break
+                        }
+                    }
+                }
+                
+                if !reconnected {
+                    // reset
+                    performConnect(connect: connect)
+                }
+            }
+        }
     }
     
     func connectOneClusterWithOtherComputer(
@@ -282,8 +343,8 @@ class SolverV1 {
             let satisfyCommandLimit = currentCommands + cost <= field.computerTypes * 100
             let satisfyCostLimit = cost < costLimit
            if satisfyCommandLimit && satisfyCostLimit {
-                performMoves(moves: moves)
-                performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
+               performMoves(moves: moves)
+               performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
                return true
            }
         }
@@ -418,5 +479,10 @@ class SolverV1 {
             connects.insert(connect)
         }
         field.performConnect(connect: connect, movedComp: movedComp)
+    }
+    
+    private func resetConnect(connect: Connect) {
+        connects.remove(connect)
+        field.resetConnect(connect: connect)
     }
 }

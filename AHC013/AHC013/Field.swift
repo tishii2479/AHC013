@@ -76,6 +76,10 @@ class Field {
     func cell(pos: Pos) -> Cell {
         cells[pos.y][pos.x]
     }
+
+    private func reverseConnect(connect: Connect) {
+        
+    }
     
     func reverseMoves(moves: [Move]) {
         for move in moves.reversed() {
@@ -97,6 +101,14 @@ class Field {
         moves.forEach { performMove(move: $0) }
     }
     
+    func resetConnect(connect: Connect) {
+        connect.comp1.connected.remove(connect.comp2)
+        connect.comp2.connected.remove(connect.comp1)
+        for pos in Util.getBetweenPos(from: connect.comp1.pos, to: connect.comp2.pos) {
+            cells[pos.y][pos.x].cable = nil
+        }
+    }
+    
     func performConnect(connect: Connect, movedComp: Computer? = nil) {
         let comp1 = connect.comp1, comp2 = connect.comp2
 //        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
@@ -107,7 +119,6 @@ class Field {
         }
 
         // Update connect cables
-        // FIXME: Does not clean cable when making the cable short
         if let movedComp = movedComp {
             for comp in movedComp.connected {
                 guard let dir = Util.toDir(from: movedComp.pos, to: comp.pos) else {
