@@ -22,17 +22,17 @@ func main() {
         IO.output(connects[i].outValue)
     }
     
-//    for i in 1 ... moves.count + connects.count {
-//        IO.output("\(min(i, moves.count))")
-//        for j in 0 ..< min(i, moves.count) {
-//            IO.output(moves[j].outValue)
-//        }
-//        IO.output("\(max(0, i - moves.count))")
-//        if i <= moves.count { continue }
-//        for j in 0 ..< i - moves.count {
-//            IO.output(connects[j].outValue)
-//        }
-//    }
+    for i in 1 ... moveCount + connectCount {
+        IO.output("\(min(i, moveCount))")
+        for j in 0 ..< min(i, moveCount) {
+            IO.output(moves[j].outValue)
+        }
+        IO.output("\(max(0, i - moveCount))")
+        if i <= moveCount { continue }
+        for j in 0 ..< i - moveCount {
+            IO.output(connects[j].outValue)
+        }
+    }
 }
 
 main()

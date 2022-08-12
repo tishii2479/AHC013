@@ -96,7 +96,7 @@ class Field {
     
     func performConnect(connect: Connect, movedComp: Computer? = nil) {
         let comp1 = connect.comp1, comp2 = connect.comp2
-        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
+//        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
                 
         guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
             IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")

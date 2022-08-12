@@ -19,13 +19,13 @@ class SolverV1 {
         return (performedMoves, Array(connects))
     }
     
-    func connectOneCluster(type: Int) {
+    func connectOneCluster(type: Int, threshold: Int = 100) {
         var distPair = [(Int, (Computer, Computer))]()
         
         let dist = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
-            return dy + dx
+            return dy * dy + dx * dx + dx * dy
         }
         
         for comp1 in field.computerGroup[type] {
@@ -42,6 +42,10 @@ class SolverV1 {
         })
         
         for (evValue, (comp1, comp2)) in distPair {
+            guard evValue <= threshold else {
+                break
+            }
+
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
                 continue
             }
