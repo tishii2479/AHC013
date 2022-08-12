@@ -185,8 +185,7 @@ class Field {
 }
 
 extension Field {
-    // TODO: refactor, `ignoreComp` is not needed?
-    func getCluster(ofComputer comp: Computer, ignoreComp: Computer? = nil) -> Set<Computer> {
+    func getCluster(ofComputer comp: Computer) -> Set<Computer> {
         var cluster = Set<Computer>()
         cluster.insert(comp)
         
@@ -195,8 +194,7 @@ extension Field {
         
         while let comp = q.pop() {
             for connectedComp in comp.connected {
-                guard !cluster.contains(connectedComp),
-                      ignoreComp != connectedComp else { continue }
+                guard !cluster.contains(connectedComp) else { continue }
                 q.push(connectedComp)
                 cluster.insert(connectedComp)
             }

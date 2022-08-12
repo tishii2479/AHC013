@@ -6,6 +6,11 @@ def test_run(exe_file: str) -> None:
     n = 100
     run = 1
     total_sum = 0
+    score_max = 10000
+    hist_div = 20
+    hist_w = score_max // hist_div
+    hist = [0] * hist_div
+
     for i in range(n):
         print(exe_file + ": " + str(i), file=sys.stderr)
         sum = 0
@@ -34,11 +39,23 @@ def test_run(exe_file: str) -> None:
                     ok = True
                 if c.isdigit() and ok:
                     score += c
-            sum += int(score)
-            total_sum += int(score)
+            score = int(score)
+            sum += score
+            total_sum += score
+            hist[score // hist_w] += 1
+
         print("Average score for", in_file, sum / run)
         print("Average is", total_sum / (i + 1) / run)
     print("[RESULT] Average is", total_sum / n / run, ":", exe_file)
+
+    for i in range(hist_div):
+        print(
+            str(i * hist_w).zfill(4)
+            + " ~ "
+            + str((i + 1) * hist_w - 1).zfill(4)
+            + ": "
+            + "*" * hist[i]
+        )
 
 
 test_run("./main.o")

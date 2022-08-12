@@ -2,6 +2,10 @@ import Foundation
 
 let runLimitDate = Date().addingTimeInterval(2.7)
 
+func isInTime() -> Bool {
+    Date() < runLimitDate
+}
+
 class Computer {
     var id: Int
     var type: Int

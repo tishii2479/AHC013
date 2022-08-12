@@ -1,20 +1,9 @@
 import Foundation
 
-func main() {
-    let a = IO.readIntArray()
-    let fieldSize = a[0], computerTypes = a[1]
-    var fieldInput = [String](repeating: "", count: fieldSize)
-    for i in 0 ..< fieldSize {
-        fieldInput[i] = IO.readString()
-    }
-    let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
-    
-    let solver = SolverV1(field: field)
-    let (moves, connects) = solver.solve()
-    
-    let moveCount = min(moves.count, computerTypes * 100)
-    let connectCount = min(connects.count, max(0, computerTypes * 100 - moveCount))
-    
+func output(moves: [Move], connects: [Connect], commandLimit: Int) {
+    let moveCount = min(moves.count, commandLimit)
+    let connectCount = min(connects.count, max(0, commandLimit - moveCount))
+
     IO.output("\(moveCount)")
     for i in 0 ..< moveCount {
         IO.output(moves[i].outValue)
@@ -36,8 +25,23 @@ func main() {
         }
     }
     
-    IO.log("Moves:", moveCount, ", Connects:", connectCount)
+    IO.log("Moves:", moveCount, "Connects:", connectCount)
     IO.log("Runtime:", 2.7 - Date().distance(to: runLimitDate))
+}
+
+func main() {
+    let a = IO.readIntArray()
+    let fieldSize = a[0], computerTypes = a[1]
+    var fieldInput = [String](repeating: "", count: fieldSize)
+    for i in 0 ..< fieldSize {
+        fieldInput[i] = IO.readString()
+    }
+    let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
+    
+    let solver = SolverV1(field: field)
+    let (moves, connects) = solver.solve()
+    
+    output(moves: moves, connects: connects, commandLimit: computerTypes * 100)
 }
 
 main()
