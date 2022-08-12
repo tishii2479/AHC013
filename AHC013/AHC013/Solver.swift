@@ -5,7 +5,7 @@ protocol Solver {
 
 class SolverV1 {
     private let field: Field
-    private var moves: [Move] = []
+    private var performedMoves: [Move] = []
     private var connects = Set<Connect>()
     private var temporaryMoves: [Move] = []
 
@@ -15,7 +15,7 @@ class SolverV1 {
 
     func solve() -> ([Move], [Connect]) {
         connectOneCluster(type: 1)
-        return (moves, Array(connects))
+        return (performedMoves, Array(connects))
     }
     
     func connectOneCluster(type: Int) {
@@ -51,10 +51,19 @@ class SolverV1 {
             if let intersections = Util.intersections(comp1.pos, comp2.pos) {
                 let currentCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
                 for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
-                    guard !fromComp.isFixed else { continue }
+//                    guard !fromComp.isFixed else { continue }
                     for inter in intersections {
                         let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
                             Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
+                        if let dir = Util.toDir(from: fromComp.pos, to: inter) {
+                            if !fromComp.isMovable(dir: dir) {
+                                continue
+                            }
+                            if fromComp.hasConnectedComp(to: dir.rev),
+                               !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
+                                continue
+                            }
+                        }
                         if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
                            let moves1 = movesToClear(from: fromComp.pos, to: inter, ignorePos: ignorePos, addEnd: true),
                            let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
@@ -94,12 +103,14 @@ class SolverV1 {
             return false
         }
         let direction = Util.fromDir(dir: dir)
-        return !field.hasConflictedCable(
+        let val = !field.hasConflictedCable(
             from: from,
             to: to,
             allowedCompType: compType,
             allowedDirection: direction
         )
+//        IO.log(from, to, compType, val)
+        return val
     }
     
     func moveToInter(from: Pos, inter: Pos) -> [Move]? {
@@ -178,26 +189,22 @@ class SolverV1 {
     }
     
     private func performTemporaryMoves(moves: [Move]) {
-        moves.forEach { performTemporaryMove(move: $0) }
+        for move in moves {
+            temporaryMoves.append(move)
+            field.performMove(move: move)
+        }
     }
 
-    private func performTemporaryMove(move: Move) {
-        temporaryMoves.append(move)
-        field.performMove(move: move)
-    }
-    
     private func reverseTemporaryMoves() {
         field.reverseMoves(moves: temporaryMoves)
         temporaryMoves.removeAll()
     }
     
     private func performMoves(moves: [Move]) {
-        moves.forEach { performMove(move: $0) }
-    }
-    
-    private func performMove(move: Move) {
-        moves.append(move)
-        field.performMove(move: move)
+        for move in moves {
+            performedMoves.append(move)
+            field.performMove(move: move)
+        }
     }
     
     private func performConnect(connect: Connect, movedComp: Computer? = nil) {

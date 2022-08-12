@@ -103,6 +103,29 @@ class Field {
             return
         }
 
+        // Update connect cables
+        if let movedComp = movedComp {
+            for comp in movedComp.connected {
+                guard let dir = Util.toDir(from: movedComp.pos, to: comp.pos) else {
+                    IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
+                    return
+                }
+                for pos in Util.getBetweenPos(from: movedComp.pos, to: comp.pos) {
+                    // check conflict
+                    if let cable = cells[pos.y][pos.x].cable,
+                       cable.compType != movedComp.type || cable.direction != Util.fromDir(dir: dir) {
+                        IO.log("Trying to overwrite cable at: \(pos), \(movedComp.pos), \(comp.pos), may be destructive", type: .warn)
+                    }
+                    cells[pos.y][pos.x].cable = Cable(
+                        compType: movedComp.type,
+                        direction: Util.fromDir(dir: dir),
+                        comp1: movedComp,
+                        comp2: comp
+                    )
+                }
+            }
+        }
+        
         if let movedComp = movedComp,
            let cable = cell(pos: movedComp.pos).cable,
            cable.compType == movedComp.type {
@@ -146,9 +169,8 @@ class Field {
     }
     
     private func moveComputer(comp: Computer, to: Pos) {
-        guard cell(pos: to).isEmpty
-                || cell(pos: to).cable?.compType == comp.type else {
-            IO.log("\(to) is not empty", type: .error)
+        guard !cell(pos: to).isComputer else {
+            IO.log("\(comp.pos) moving to \(to), which is not empty", type: .error)
             dump()
             fatalError()
         }

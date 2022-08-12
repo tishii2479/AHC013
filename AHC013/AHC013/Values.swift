@@ -16,6 +16,28 @@ class Computer {
         self.type = type
         self.pos = pos
     }
+    
+    func isMovable(dir: Dir) -> Bool {
+        if connected.count == 0 { return true }
+        let direction = Util.fromDir(dir: dir)
+        for comp in connected {
+            if let dir = Util.toDir(from: pos, to: comp.pos),
+               direction != Util.fromDir(dir: dir) {
+                return false
+            }
+        }
+        return true
+    }
+    
+    func hasConnectedComp(to dir: Dir) -> Bool {
+        for comp in connected {
+            if let compDir = Util.toDir(from: pos, to: comp.pos),
+               dir == compDir {
+                return true
+            }
+        }
+        return false
+    }
 }
 
 extension Computer: Equatable {

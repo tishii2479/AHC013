@@ -77,6 +77,10 @@ int main() {
 
     int y;
     cin >> y;
+
+    if (x + y > k * 100)
+        error("To many moves: " + to_string(x + y));
+
     for (int i = 0; i < y; i++) {
         int e, f, g, h;
         cin >> e >> f >> g >> h;
