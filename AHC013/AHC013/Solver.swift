@@ -20,14 +20,14 @@ class SolverV1 {
 
     func solve() -> ([Move], [Connect]) {
         for i in 1 ... 2 {
-            connectOneCluster(type: i, distLimit: 5, costLimit: 5)
-            connectOneCluster(type: i, distLimit: 10, costLimit: 10)
+            connectOneCluster(type: i, evLimit: 5, costLimit: 5)
+            connectOneCluster(type: i, evLimit: 10, costLimit: 10)
         }
         return (performedMoves, Array(connects))
     }
     
-    func connectOneCluster(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
-        var distPair = [(Int, (Computer, Computer))]()
+    func connectOneCluster(type: Int, evLimit: Int = 100, costLimit: Int = 100) {
+        var compPair = [(Int, (Computer, Computer))]()
         
         // TODO: inject
         let dist = { (a: Pos, b: Pos) -> Int in
@@ -41,19 +41,21 @@ class SolverV1 {
                 guard comp1 != comp2 else { continue }
                 
                 let evValue = dist(comp1.pos, comp2.pos)
-                distPair.append((evValue, (comp1, comp2)))
+                if evValue < evLimit {
+                    compPair.append((evValue, (comp1, comp2)))
+                }
             }
         }
         
-        distPair.sort(by: { (a, b) in
+        compPair.sort(by: { (a, b) in
             return a.0 < b.0
         })
         
-        for (evValue, (comp1, comp2)) in distPair {
-            guard evValue <= distLimit else {
+        for (evValue, (comp1, comp2)) in compPair {
+            // Just in case....
+            guard evValue <= evLimit else {
                 break
             }
-
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
                 continue
             }
