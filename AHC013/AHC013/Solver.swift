@@ -19,26 +19,42 @@ class SolverV1 {
     }
 
     func solve() -> ([Move], [Connect]) {
-        connectOneClusterMst(type: 1, evLimit: 5, costLimit: 5)
-        connectOneClusterMst(type: 1, evLimit: 10, costLimit: 10)
-        connectOneClusterMst(type: 2, evLimit: 5, costLimit: 5)
-        connectOneClusterMst(type: 2, evLimit: 10, costLimit: 10)
-//        connectOneClusterBfs(type: 2, evLimit: 10, costLimit: 10)
-//        connectOneClusterBfs(type: 2, evLimit: 10, costLimit: 10)
+        connectOneClusterMst(type: 1, distLimit: 5, costLimit: 5)
+        connectOneClusterMst(type: 1, distLimit: 10, costLimit: 10)
+        connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
+        IO.log(currentCommands)
+        connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
         return (performedMoves, Array(connects))
     }
     
-    func connectOneClusterBfs(type: Int, evLimit: Int = 100, costLimit: Int = 100) {
-        let dist: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+    func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100) {
+        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
             return dy + dx
         }
 
-        let nearComputers = getNearCompPair(type: type, dist: dist)
-        guard let startComp = field.computerGroup[type].randomElement() else {
+        let nearComputers = getNearCompPair(types: types, distF: distF)
+        var largestClusterSize = 0
+        var largestStartComp: Computer? = nil
+        
+        for _ in 0 ..< 30 {
+            guard let type = types.randomElement(),
+                  let startComp: Computer = field.computerGroup[type].randomElement() else {
+                continue
+            }
+            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: distF)
+            if reachableComps.count > largestClusterSize {
+                largestClusterSize = reachableComps.count
+                largestStartComp = startComp
+            }
+        }
+        
+        guard let startComp = largestStartComp else {
             return
         }
+        
+        IO.log("Selected: ", startComp.type, startComp.pos, largestClusterSize)
         
         var q = Queue<Computer>()
         q.push(startComp)
@@ -46,51 +62,61 @@ class SolverV1 {
             guard let nearComps = nearComputers[comp] else {
                 continue
             }
-            for (evValue, nearComp) in nearComps {
-                connectCompIfPossible(
+            for (dist, nearComp) in nearComps {
+                let connected = connectCompIfPossible(
                     comp1: comp, comp2: nearComp,
-                    evValue: evValue, evLimit: evLimit, costLimit: costLimit
+                    dist: dist, distLimit: distLimit, costLimit: costLimit
                 )
+                if connected {
+                    q.push(nearComp)
+                }
             }
         }
     }
     
     func getNearCompPair(
-        type: Int, dist: (Pos, Pos) -> Int, loopLimit: Int = 30
+        types: [Int], distF: (Pos, Pos) -> Int
     ) -> [Computer: [(Int, Computer)]] {
         var ret = [Computer: [(Int, Computer)]]()
-        for comp in field.computerGroup[type] {
-            let nearComp = field.getNearComputers(aroundComp: comp, loopLimit: loopLimit, dist: dist)
-            ret[comp] = nearComp
+        for type in types {
+            for comp in field.computerGroup[type] {
+                let nearComp = field.getNearComputers(
+                    aroundComp: comp,
+                    loopLimit: field.size * field.size,
+                    distF: distF
+                )
+                ret[comp] = nearComp
+            }
         }
         return ret
     }
     
-    func connectOneClusterMst(type: Int, evLimit: Int = 100, costLimit: Int = 100) {
-        let dist: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+    func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
+        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
             return dy + dx
         }
-        let compPair = getSortedCompPair(type: type, evLimit: evLimit, dist: dist)
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         
-        for (evValue, (comp1, comp2)) in compPair {
-            connectCompIfPossible(
+        for (dist, (comp1, comp2)) in compPair {
+            let _ = connectCompIfPossible(
                 comp1: comp1, comp2: comp2,
-                evValue: evValue, evLimit: evLimit, costLimit: costLimit
+                dist: dist, distLimit: distLimit, costLimit: costLimit
             )
         }
     }
     
+    // Returns true if connected
     private func connectCompIfPossible(
         comp1: Computer, comp2: Computer,
-        evValue: Int, evLimit: Int, costLimit: Int
-    ) {
-        guard evValue <= evLimit else {
-            return
+        dist: Int, distLimit: Int, costLimit: Int
+    ) -> Bool {
+        guard dist <= distLimit else {
+            return false
         }
         guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
-            return
+            return false
         }
         var selectedMoves: [Move]? = nil
         var selectedMoveComp: Computer? = nil
@@ -156,19 +182,21 @@ class SolverV1 {
            if satisfyCommandLimit && satisfyCostLimit {
                 performMoves(moves: moves)
                 performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
+               return true
            }
         }
+        return false
     }
     
-    private func getSortedCompPair(type: Int, evLimit: Int, dist: (Pos, Pos) -> Int) -> [(Int, (Computer, Computer))] {
+    private func getSortedCompPair(type: Int, distLimit: Int, distF: (Pos, Pos) -> Int) -> [(Int, (Computer, Computer))] {
         var compPair = [(Int, (Computer, Computer))]()
         for comp1 in field.computerGroup[type] {
             for comp2 in field.computerGroup[type] {
                 guard comp1 != comp2 else { continue }
                 
-                let evValue = dist(comp1.pos, comp2.pos)
-                if evValue < evLimit {
-                    compPair.append((evValue, (comp1, comp2)))
+                let dist = distF(comp1.pos, comp2.pos)
+                if dist < distLimit {
+                    compPair.append((dist, (comp1, comp2)))
                 }
             }
         }

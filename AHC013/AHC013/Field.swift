@@ -260,8 +260,8 @@ extension Field {
     
     func getNearComputers(
         aroundComp: Computer,
-        loopLimit: Int = 30,
-        dist: (Pos, Pos) -> Int
+        loopLimit: Int = 50,
+        distF: (Pos, Pos) -> Int
     ) -> [(Int, Computer)] {
         var ret = [(Int, Computer)]()
         
@@ -285,7 +285,7 @@ extension Field {
                     
                     if let comp = cell(pos: nextPos).computer,
                        aroundComp.type == comp.type {
-                        ret.append((dist(aroundComp.pos, comp.pos), comp))
+                        ret.append((distF(aroundComp.pos, comp.pos), comp))
                     }
                 }
             }
