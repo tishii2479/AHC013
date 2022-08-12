@@ -17,16 +17,20 @@ class SolverV1 {
         self.field = field
     }
 
-    func solve() -> ([Move], [Connect]) {
-        connectOneClusterMst(type: 1, distLimit: 5, costLimit: 5)
-        connectOneClusterMst(type: 1, distLimit: 50, costLimit: 10)
+    func solve(param: Parameter) -> ([Move], [Connect]) {
+        connectOneClusterMst(type: 1, distLimit: param.distLimit, costLimit: param.costLimit)
+        connectOneClusterMst(type: 1, distLimit: 50, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: 1)
         
         IO.log(elapsedTime(), currentCommands)
         
-        var costLimit = 5
+        var costLimit = param.costLimit
         while currentCommands < field.computerTypes * 100 && isInTime() {
-            connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 50, costLimit: costLimit)
+            connectOneClusterBfs(
+                types: Array(2 ... field.computerTypes),
+                distLimit: 50,
+                costLimit: costLimit
+            )
             costLimit += 1
         }
         return (performedMoves, Array(connects))

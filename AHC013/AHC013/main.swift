@@ -1,5 +1,10 @@
 import Foundation
 
+struct Parameter {
+    var distLimit: Int
+    var costLimit: Int
+}
+
 func output(moves: [Move], connects: [Connect], commandLimit: Int) {
     let moveCount = min(moves.count, commandLimit)
     let connectCount = min(connects.count, max(0, commandLimit - moveCount))
@@ -43,7 +48,10 @@ func main() {
     let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
     
     let solver = SolverV1(field: field)
-    let (moves, connects) = solver.solve()
+    
+    // TODO: Optimize
+    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5)
+    let (moves, connects) = solver.solve(param: param)
     
     output(moves: moves, connects: connects, commandLimit: computerTypes * 100)
     
