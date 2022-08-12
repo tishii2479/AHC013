@@ -15,12 +15,14 @@ class Field {
     }
     
     let size: Int
+    let computerTypes: Int
     private(set) var cells: [[Cell]]
     private(set) var computers: [Computer]
     private(set) var computerGroup: [Set<Computer>]
     
     init(size: Int, computerTypes: Int, fieldInput: [String]) {
         self.size = size
+        self.computerTypes = computerTypes
         self.computers = []
         self.cells = [[Cell]](
             repeating: [Cell](
@@ -53,6 +55,7 @@ class Field {
     
     init(size: Int, computerTypes: Int, cells: [[Cell]]) {
         self.size = size
+        self.computerTypes = computerTypes
         self.cells = cells
         self.computers = []
         self.computerGroup = [Set<Computer>](

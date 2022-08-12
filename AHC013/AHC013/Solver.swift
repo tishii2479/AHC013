@@ -9,6 +9,10 @@ class SolverV1 {
     private var performedMoves: [Move] = []
     private var connects = Set<Connect>()
     private var temporaryMoves: [Move] = []
+    
+    private var currentCommands: Int {
+        performedMoves.count + connects.count
+    }
 
     init(field: Field) {
         self.field = field
@@ -22,10 +26,11 @@ class SolverV1 {
     func connectOneCluster(type: Int, threshold: Int = 100) {
         var distPair = [(Int, (Computer, Computer))]()
         
+        // TODO: inject
         let dist = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
-            return dy * dy + dx * dx + dx * dy
+            return dy + dx
         }
         
         for comp1 in field.computerGroup[type] {
@@ -102,7 +107,9 @@ class SolverV1 {
                 reverseTemporaryMoves()
             }
             
-            if let moves = selectedMoves {
+            if let moves = selectedMoves,
+               // Check command limit
+               currentCommands + moves.count + 1 <= field.computerTypes * 100 {
                 performMoves(moves: moves)
                 performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
             }
