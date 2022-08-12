@@ -185,27 +185,28 @@ class Field {
 }
 
 extension Field {
-    func getCluster(ofComputer comp: Computer) -> Set<Computer> {
-        var cluster = Set<Computer>()
-        cluster.insert(comp)
+    func getCluster(ofComputer comp: Computer) -> Cluster {
+        var comps = Set<Computer>()
+        comps.insert(comp)
         
         var q = Queue<Computer>()
         q.push(comp)
         
         while let comp = q.pop() {
             for connectedComp in comp.connected {
-                guard !cluster.contains(connectedComp) else { continue }
+                guard !comps.contains(connectedComp) else { continue }
                 q.push(connectedComp)
-                cluster.insert(connectedComp)
+                comps.insert(connectedComp)
             }
         }
         
+        let cluster = Cluster(comps: comps, types: computerTypes)
         return cluster
     }
     
     func isInSameCluster(comp1: Computer, comp2: Computer) -> Bool {
         let cluster = getCluster(ofComputer: comp1)
-        return cluster.contains(comp2)
+        return cluster.comps.contains(comp2)
     }
     
     func findNearestEmptyCell(at: Pos, trialLimit: Int = 50, ignorePos: [Pos] = []) -> Pos? {

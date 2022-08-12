@@ -56,6 +56,59 @@ extension Computer: Hashable {
     }
 }
 
+struct Cluster {
+    var comps: Set<Computer>
+    var typeCounts: [Int]
+    
+    init(comps: Set<Computer>, types: Int) {
+        self.comps = Set<Computer>()
+        typeCounts = [Int](repeating: 0, count: types + 1)
+        for comp in comps {
+            add(comp: comp)
+        }
+    }
+    
+    mutating func getScore(addType: Int) -> Int {
+        // calc temporary
+        typeCounts[addType] += 1
+        let newScore = calcScore()
+        typeCounts[addType] -= 1
+        
+        return newScore
+    }
+    
+    func calcScore() -> Int {
+        var score = 0
+        for i in 1 ..< typeCounts.count {
+            for j in 1 ... i {
+                if i == j {
+                    score += typeCounts[i] * (typeCounts[i] - 1) / 2
+                }
+                else {
+                    score -= typeCounts[i] * typeCounts[j]
+                }
+            }
+        }
+        IO.log(typeCounts, score)
+        return score
+    }
+    
+    func merge(_ other: Cluster) -> Cluster {
+        var ret = self
+        for comp in other.comps {
+            ret.add(comp: comp)
+        }
+        return ret
+    }
+    
+    mutating func add(comp: Computer) {
+        if !comps.contains(comp) {
+            typeCounts[comp.type] += 1
+        }
+        comps.insert(comp)
+    }
+}
+
 enum Direction {
     case horizontal
     case vertical

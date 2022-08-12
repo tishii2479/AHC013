@@ -43,23 +43,17 @@ class SolverV1 {
                 
                 let cluster1 = field.getCluster(ofComputer: comp1)
                 let cluster2 = field.getCluster(ofComputer: comp2)
-                
-                guard cluster1.count > 1 && cluster2.count > 1 else {
-                    continue
-                }
-                
-                let otherCounts = cluster1.subtracting(field.computerGroup[type]).count +
-                                    cluster2.subtracting(field.computerGroup[type]).count
-                guard otherCounts < otherCompLimit else {
-                    continue
-                }
+                let currentScore = cluster1.calcScore() + cluster2.calcScore()
+                var newCluster = cluster1.merge(cluster2)
                 
                 if Util.isAligned(comp1.pos, comp2.pos) {
                     // oxo
                     let center = Pos(x: (comp1.pos + comp2.pos).x / 2, y: (comp1.pos + comp2.pos).y / 2)
                     if let comp = field.cell(pos: center).computer {
-                        performConnect(connect: Connect(comp1: comp1, comp2: comp))
-                        performConnect(connect: Connect(comp1: comp2, comp2: comp))
+                        if newCluster.getScore(addType: comp.type) > currentScore {
+                            performConnect(connect: Connect(comp1: comp1, comp2: comp))
+                            performConnect(connect: Connect(comp1: comp2, comp2: comp))
+                        }
                     }
                 }
                 else {
@@ -70,9 +64,11 @@ class SolverV1 {
                         Pos(x: comp2.pos.x, y: comp1.pos.y)
                     ] {
                         if let comp = field.cell(pos: inter).computer {
-                            performConnect(connect: Connect(comp1: comp1, comp2: comp))
-                            performConnect(connect: Connect(comp1: comp2, comp2: comp))
-                            break
+                            if newCluster.getScore(addType: comp.type) > currentScore {
+                                performConnect(connect: Connect(comp1: comp1, comp2: comp))
+                                performConnect(connect: Connect(comp1: comp2, comp2: comp))
+                                break
+                            }
                         }
                     }
                 }
@@ -175,7 +171,7 @@ class SolverV1 {
         var selectedMoveComp: Computer? = nil
 
         if let intersections = Util.intersections(comp1.pos, comp2.pos) {
-            let currentCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
+            let currentCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
             for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
                 for inter in intersections {
                     let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
@@ -205,8 +201,8 @@ class SolverV1 {
 
                         // TODO: consider cable length
                         let didImproved = selectedMoves == nil || moves.count < selectedMoves!.count
-                        let newCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
-                        let didSustainCluster = currentCluster.isSubset(of: newCluster)
+                        let newCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
+                        let didSustainCluster = currentCluster.comps.isSubset(of: newCluster.comps)
                         if didImproved && didSustainCluster {
                             selectedMoves = moves
                             selectedMoveComp = fromComp
