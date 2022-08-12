@@ -1,3 +1,5 @@
+import Foundation
+
 func main() {
     let a = IO.readIntArray()
     let fieldSize = a[0], computerTypes = a[1]
@@ -33,6 +35,9 @@ func main() {
             IO.output(connects[j].outValue)
         }
     }
+    
+    IO.log("Moves:", moveCount, ", Connects:", connectCount)
+    IO.log("Runtime:", 2.7 - Date().distance(to: runLimitDate))
 }
 
 main()

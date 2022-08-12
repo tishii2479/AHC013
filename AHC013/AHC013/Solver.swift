@@ -19,11 +19,14 @@ class SolverV1 {
     }
 
     func solve() -> ([Move], [Connect]) {
-        connectOneCluster(type: 1)
+        for i in 1 ... 2 {
+            connectOneCluster(type: i, distLimit: 5, costLimit: 5)
+            connectOneCluster(type: i, distLimit: 10, costLimit: 10)
+        }
         return (performedMoves, Array(connects))
     }
     
-    func connectOneCluster(type: Int, threshold: Int = 100) {
+    func connectOneCluster(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
         var distPair = [(Int, (Computer, Computer))]()
         
         // TODO: inject
@@ -47,7 +50,7 @@ class SolverV1 {
         })
         
         for (evValue, (comp1, comp2)) in distPair {
-            guard evValue <= threshold else {
+            guard evValue <= distLimit else {
                 break
             }
 
@@ -107,11 +110,15 @@ class SolverV1 {
                 reverseTemporaryMoves()
             }
             
-            if let moves = selectedMoves,
-               // Check command limit
-               currentCommands + moves.count + 1 <= field.computerTypes * 100 {
-                performMoves(moves: moves)
-                performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
+            if let moves = selectedMoves {
+                let cost = moves.count + 1
+                // Check command limit
+                let satisfyCommandLimit = currentCommands + cost <= field.computerTypes * 100
+                let satisfyCostLimit = cost < costLimit
+               if satisfyCommandLimit && satisfyCostLimit {
+                    performMoves(moves: moves)
+                    performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
+               }
             }
         }
     }
