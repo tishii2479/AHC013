@@ -5,7 +5,7 @@ files = [
     "Solver.swift",
     "Field.swift",
     "Util.swift",
-    "Queue.swift",
+    "DataStructures.swift",
     "IO.swift",
 ]
 

@@ -333,4 +333,16 @@ extension Field {
             IO.log("", type: .none)
         }
     }
+    
+    func calcScore() -> Int {
+        var score = 0
+        var seen = Set<Computer>()
+        for comp in computers {
+            guard !seen.contains(comp) else { continue }
+            let cluster = getCluster(ofComputer: comp)
+            score += cluster.calcScore()
+            seen.formUnion(cluster.comps)
+        }
+        return score
+    }
 }

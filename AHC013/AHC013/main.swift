@@ -46,7 +46,8 @@ func main() {
     let (moves, connects) = solver.solve()
     
     output(moves: moves, connects: connects, commandLimit: computerTypes * 100)
-
+    
+    IO.log("Score:", field.calcScore())
     IO.log("Runtime:", elapsedTime())
 }
 
