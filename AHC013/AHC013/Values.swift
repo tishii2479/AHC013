@@ -1,9 +1,13 @@
 import Foundation
 
-let runLimitDate = Date().addingTimeInterval(2.7)
+let startDate = Date()
+
+func elapsedTime() -> Double {
+    Date().timeIntervalSince(startDate)
+}
 
 func isInTime() -> Bool {
-    Date() < runLimitDate
+    elapsedTime() < 2.7
 }
 
 class Computer {

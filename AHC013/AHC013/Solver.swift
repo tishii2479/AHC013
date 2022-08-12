@@ -19,11 +19,15 @@ class SolverV1 {
 
     func solve() -> ([Move], [Connect]) {
         connectOneClusterMst(type: 1, distLimit: 5, costLimit: 5)
-        connectOneClusterMst(type: 1, distLimit: 10, costLimit: 10)
+        connectOneClusterMst(type: 1, distLimit: 50, costLimit: 10)
         connectOneClusterWithOtherComputer(type: 1)
-
+        
+        IO.log(elapsedTime(), currentCommands)
+        
+        var costLimit = 5
         while currentCommands < field.computerTypes * 100 && isInTime() {
-            connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
+            connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 50, costLimit: costLimit)
+            costLimit += 1
         }
         return (performedMoves, Array(connects))
     }
@@ -56,7 +60,6 @@ class SolverV1 {
             var bestMoves = [Move]()
             var bestImprovedScore = 0
             
-            IO.log("Check:", comp1.pos, comp2.pos)
             for pos1 in field.movable(comp: comp1, moveLimit: 3) {
                 for pos2 in field.movable(comp: comp2, moveLimit: 3) {
                     guard pos1 != pos2 else { continue }
@@ -65,7 +68,6 @@ class SolverV1 {
                     var ok = true
                     var tempConnects = [Connect]()
                     var connectedComps = [Computer]()
-                    IO.log(pos1, pos2, comp1.pos, comp2.pos)
                         
                     // TODO: find optimal
                     
@@ -85,7 +87,6 @@ class SolverV1 {
                     
                     let newComputerTypes = connectedComps.filter{ $0.type != comp1.type }.map{ $0.type }
                     let improvedScore = newCluster.getScore(addTypes: newComputerTypes) - currentScore
-                    IO.log(pos1, pos2, comp1.pos, comp2.pos, improvedScore)
                     if let moves1 = Util.getMoves(from: comp1.pos, to: pos1),
                        let moves2 = Util.getMoves(from: comp2.pos, to: pos2),
                        improvedScore > bestImprovedScore && currentCommands + moves1.count + moves2.count + tempConnects.count <= field.computerTypes * 100 {

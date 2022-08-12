@@ -297,6 +297,7 @@ extension Field {
         })
     }
     
+    // TODO: add test
     func movable(comp: Computer, moveLimit: Int = 10) -> [Pos] {
         var ret: [Pos] = [comp.pos]
         for dir in Dir.all {
