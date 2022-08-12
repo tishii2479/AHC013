@@ -208,7 +208,7 @@ extension Field {
         return cluster.contains(comp2)
     }
     
-    func findNearestEmptyCell(at: Pos, trialLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
+    func findNearestEmptyCell(at: Pos, trialLimit: Int = 50, ignorePos: [Pos] = []) -> Pos? {
         var q = Queue<Pos>()
         var seenPos = Set<Pos>()
         q.push(at)

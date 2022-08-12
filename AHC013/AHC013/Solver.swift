@@ -1,4 +1,3 @@
-import OpenGL
 protocol Solver {
     init(field: Field)
     func solve()
@@ -21,10 +20,64 @@ class SolverV1 {
     func solve() -> ([Move], [Connect]) {
         connectOneClusterMst(type: 1, distLimit: 5, costLimit: 5)
         connectOneClusterMst(type: 1, distLimit: 10, costLimit: 10)
+        connectOneClusterWithOtherComputer(type: 1)
         connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
-        IO.log(currentCommands)
         connectOneClusterBfs(types: Array(2 ... field.computerTypes), distLimit: 20, costLimit: 10)
         return (performedMoves, Array(connects))
+    }
+    
+    func connectOneClusterWithOtherComputer(
+        type: Int, otherCompLimit: Int = 1, costLimit: Int = 10
+    ) {
+        for comp1 in field.computerGroup[type] {
+            for comp2 in field.computerGroup[type] {
+                guard currentCommands + 2 <= field.computerTypes * 100 else {
+                    return
+                }
+                guard comp1.pos.dist(to: comp2.pos) == 2 else {
+                    continue
+                }
+                guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
+                    continue
+                }
+                
+                let cluster1 = field.getCluster(ofComputer: comp1)
+                let cluster2 = field.getCluster(ofComputer: comp2)
+                
+                guard cluster1.count > 1 && cluster2.count > 1 else {
+                    continue
+                }
+                
+                let otherCounts = cluster1.subtracting(field.computerGroup[type]).count +
+                                    cluster2.subtracting(field.computerGroup[type]).count
+                guard otherCounts < otherCompLimit else {
+                    continue
+                }
+                
+                if Util.isAligned(comp1.pos, comp2.pos) {
+                    // oxo
+                    let center = Pos(x: (comp1.pos + comp2.pos).x / 2, y: (comp1.pos + comp2.pos).y / 2)
+                    if let comp = field.cell(pos: center).computer {
+                        performConnect(connect: Connect(comp1: comp1, comp2: comp))
+                        performConnect(connect: Connect(comp1: comp2, comp2: comp))
+                    }
+                }
+                else {
+                    // ox
+                    //  o
+                    for inter in [
+                        Pos(x: comp1.pos.x, y: comp2.pos.y),
+                        Pos(x: comp2.pos.x, y: comp1.pos.y)
+                    ] {
+                        if let comp = field.cell(pos: inter).computer {
+                            performConnect(connect: Connect(comp1: comp1, comp2: comp))
+                            performConnect(connect: Connect(comp1: comp2, comp2: comp))
+                            break
+                        }
+                    }
+                }
+            }
+        }
     }
     
     func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100) {
@@ -174,7 +227,17 @@ class SolverV1 {
             reverseTemporaryMoves()
         }
         
-        if let moves = selectedMoves {
+        return performCommandIfPossible(
+            moves: selectedMoves, comp1: comp1, comp2: comp2,
+            costLimit: costLimit, selectedMoveComp: selectedMoveComp
+        )
+    }
+    
+    private func performCommandIfPossible(
+        moves: [Move]?, comp1: Computer, comp2: Computer,
+        costLimit: Int, selectedMoveComp: Computer? = nil
+    ) -> Bool {
+        if let moves = moves {
             let cost = moves.count + 1
             // Check command limit
             let satisfyCommandLimit = currentCommands + cost <= field.computerTypes * 100

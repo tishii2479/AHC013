@@ -169,6 +169,10 @@ extension Pos {
     func isValid(boardSize: Int) -> Bool {
         x >= 0 && y >= 0 && x < boardSize && y < boardSize
     }
+    
+    func dist(to: Pos) -> Int {
+        abs(to.x - x) + abs(to.y - y)
+    }
 }
 
 extension Pos {
