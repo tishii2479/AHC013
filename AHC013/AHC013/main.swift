@@ -10,26 +10,29 @@ func main() {
     let solver = SolverV1(field: field)
     let (moves, connects) = solver.solve()
     
-    IO.output("\(moves.count)")
-    for move in moves {
-        IO.output(move.outValue)
+    let moveCount = min(moves.count, computerTypes * 100)
+    let connectCount = min(connects.count, max(0, computerTypes * 100 - moveCount))
+    
+    IO.output("\(moveCount)")
+    for i in 0 ..< moveCount {
+        IO.output(moves[i].outValue)
     }
-    IO.output("\(connects.count)")
-    for connect in connects {
-        IO.output(connect.outValue)
+    IO.output("\(connectCount)")
+    for i in 0 ..< connectCount {
+        IO.output(connects[i].outValue)
     }
     
-    for i in 1 ... moves.count + connects.count {
-        IO.output("\(min(i, moves.count))")
-        for j in 0 ..< min(i, moves.count) {
-            IO.output(moves[j].outValue)
-        }
-        IO.output("\(max(0, i - moves.count))")
-        if i <= moves.count { continue }
-        for j in 0 ..< i - moves.count {
-            IO.output(connects[j].outValue)
-        }
-    }
+//    for i in 1 ... moves.count + connects.count {
+//        IO.output("\(min(i, moves.count))")
+//        for j in 0 ..< min(i, moves.count) {
+//            IO.output(moves[j].outValue)
+//        }
+//        IO.output("\(max(0, i - moves.count))")
+//        if i <= moves.count { continue }
+//        for j in 0 ..< i - moves.count {
+//            IO.output(connects[j].outValue)
+//        }
+//    }
 }
 
 main()

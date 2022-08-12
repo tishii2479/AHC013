@@ -96,7 +96,7 @@ class Field {
     
     func performConnect(connect: Connect, movedComp: Computer? = nil) {
         let comp1 = connect.comp1, comp2 = connect.comp2
-//        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
+        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
                 
         guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
             IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
@@ -104,6 +104,7 @@ class Field {
         }
 
         // Update connect cables
+        // FIXME: Does not clean cable when making the cable short
         if let movedComp = movedComp {
             for comp in movedComp.connected {
                 guard let dir = Util.toDir(from: movedComp.pos, to: comp.pos) else {
@@ -208,7 +209,9 @@ extension Field {
     
     func findNearestEmptyCell(pos: Pos, trialLimit: Int = 20, ignorePos: [Pos] = []) -> Pos? {
         var q = Queue<Pos>()
+        var seenPos = Set<Pos>()
         q.push(pos)
+        seenPos.insert(pos)
         for _ in 0 ..< trialLimit {
             guard let v = q.pop() else {
                 return nil
@@ -217,9 +220,10 @@ extension Field {
                 return v
             }
             for dir in Dir.all {
-                let nextPos = pos + dir
-                if nextPos.isValid(boardSize: size) {
+                let nextPos = v + dir
+                if nextPos.isValid(boardSize: size) && !seenPos.contains(nextPos) {
                     q.push(nextPos)
+                    seenPos.insert(nextPos)
                 }
             }
         }
@@ -227,15 +231,26 @@ extension Field {
     }
     
     func hasConflictedCable(
+        at pos: Pos,
+        allowedCompType: Int? = nil,
+        allowedDirection: Direction? = nil
+    ) -> Bool {
+        if let cable = cell(pos: pos).cable,
+           cable.compType != allowedCompType || cable.direction != allowedDirection {
+            return true
+        }
+        return false
+    }
+    
+    func hasConflictedCable(
         from: Pos,
         to: Pos,
-        allowedCompType: Int,
-        allowedDirection: Direction
+        allowedCompType: Int? = nil,
+        allowedDirection: Direction? = nil
     ) -> Bool {
         let path = [from] + Util.getBetweenPos(from: from, to: to) + [to]
         for pos in path {
-            if let cable = cell(pos: pos).cable,
-               cable.compType != allowedCompType || cable.direction != allowedDirection {
+            if hasConflictedCable(at: pos, allowedCompType: allowedCompType, allowedDirection: allowedDirection) {
                 return true
             }
         }

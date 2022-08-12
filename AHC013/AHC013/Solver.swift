@@ -1,3 +1,4 @@
+import OpenGL
 protocol Solver {
     init(field: Field)
     func solve()
@@ -24,7 +25,7 @@ class SolverV1 {
         let dist = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
-            return dy + dx + dy * dx
+            return dy + dx
         }
         
         for comp1 in field.computerGroup[type] {
@@ -40,7 +41,7 @@ class SolverV1 {
             return a.0 < b.0
         })
         
-        for (_, (comp1, comp2)) in distPair {
+        for (evValue, (comp1, comp2)) in distPair {
             guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
                 continue
             }
@@ -51,7 +52,6 @@ class SolverV1 {
             if let intersections = Util.intersections(comp1.pos, comp2.pos) {
                 let currentCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
                 for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
-//                    guard !fromComp.isFixed else { continue }
                     for inter in intersections {
                         let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
                             Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
@@ -65,9 +65,15 @@ class SolverV1 {
                             }
                         }
                         if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
-                           let moves1 = movesToClear(from: fromComp.pos, to: inter, ignorePos: ignorePos, addEnd: true),
+                           let moves1 = movesToClear(
+                            from: fromComp.pos, to: inter,
+                            ignorePos: ignorePos, fixedComp: [fromComp, toComp], addEnd: true
+                           ),
                            let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
-                           let moves2 = movesToClear(from: inter, to: toComp.pos, ignorePos: ignorePos) {
+                           let moves2 = movesToClear(
+                            from: inter, to: toComp.pos,
+                            ignorePos: ignorePos, fixedComp: [fromComp, toComp]
+                           ) {
                             let moves = moves1 + moveToInter + moves2
                             let didImproved = selectedMoves == nil || moves.count < selectedMoves!.count
                             let newCluster = field.getCluster(ofComputer: comp1).union(field.getCluster(ofComputer: comp2))
@@ -85,7 +91,8 @@ class SolverV1 {
                 // is already aligned
                 let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: comp2.pos) + [comp2.pos]
                 if checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
-                   let moves = movesToClear(from: comp1.pos, to: comp2.pos, ignorePos: ignorePos) {
+                   let moves = movesToClear(from: comp1.pos, to: comp2.pos,
+                                            ignorePos: ignorePos, fixedComp: [comp1, comp2]) {
                     selectedMoves = moves
                 }
                 reverseTemporaryMoves()
@@ -109,7 +116,6 @@ class SolverV1 {
             allowedCompType: compType,
             allowedDirection: direction
         )
-//        IO.log(from, to, compType, val)
         return val
     }
     
@@ -121,7 +127,7 @@ class SolverV1 {
         return interMoves
     }
     
-    func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], addEnd: Bool = false) -> [Move]? {
+    func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], fixedComp: [Computer], addEnd: Bool = false) -> [Move]? {
         let path = Util.getBetweenPos(from: from, to: to, addEnd: addEnd)
         var clearMoves = [Move]()
         for pos in path {
@@ -132,7 +138,7 @@ class SolverV1 {
                 return nil
             }
             
-            guard let movesToEmpty = movesToEmptyCell(from: pos, to: emptyPos) else {
+            guard let movesToEmpty = movesToEmptyCell(from: pos, to: emptyPos, fixedComp: fixedComp) else {
                 return nil
             }
 
@@ -142,7 +148,7 @@ class SolverV1 {
         return clearMoves
     }
     
-    func movesToEmptyCell(from: Pos, to: Pos, trialLimit: Int = 20) -> [Move]? {
+    func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
         let dy = to.y - from.y
         let dx = to.x - from.x
         
@@ -171,8 +177,13 @@ class SolverV1 {
             var ret = [Move]()
             
             for dir in dirs {
-                if let comp = field.cell(pos: cPos).computer,
-                   comp.isFixed {
+                guard let comp = field.cell(pos: cPos).computer,
+                      // Cable won't extend automatically,
+                      // so another computer may come on the extended cable
+                      // comp.isMovable(dir: dir),
+                      comp.connected.count == 0,
+                      !fixedComp.contains(comp),
+                      !field.hasConflictedCable(at: cPos) else {
                     disallowedMove = true
                     break
                 }

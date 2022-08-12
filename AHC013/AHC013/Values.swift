@@ -7,9 +7,6 @@ class Computer {
     var type: Int
     var pos: Pos
     var connected = Set<Computer>()
-    var isFixed: Bool {
-        connected.count > 0
-    }
     
     init(id: Int, type: Int, pos: Pos) {
         self.id = id
@@ -18,11 +15,10 @@ class Computer {
     }
     
     func isMovable(dir: Dir) -> Bool {
-        if connected.count == 0 { return true }
         let direction = Util.fromDir(dir: dir)
         for comp in connected {
-            if let dir = Util.toDir(from: pos, to: comp.pos),
-               direction != Util.fromDir(dir: dir) {
+            if let connectedDir = Util.toDir(from: pos, to: comp.pos),
+               direction != Util.fromDir(dir: connectedDir) {
                 return false
             }
         }
