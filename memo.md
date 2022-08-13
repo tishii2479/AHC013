@@ -28,39 +28,25 @@
     - 盤面が密
     - K=2
         - costLimitを小さくするとよい
-
-## TODO:
-
-- リファクタリング!
-
-- パラメータをN, Kごとに最適化
-
-- ケーブルの距離が長いものは却下する
-
-- 2つ目のクラスタでも跨いで作る
-- 1番目のクラスタは全て試す?
-
-- clearMoveの最適化
-
-- 1つ目のクラスタはなるべくスペースが大きくなるように作る
-    - 外側に作る
-    - 真ん中らへんを切る、なるべく端っこの組みを繋げる
-
 - 2つ大きいクラスタを作った方がいい
     - ある程度動かしてから焼きなましできそう
 
-- ベストなクラスタの作り方の検討
-    - 作れる時は2つ大きいクラスタを作る必要がありそう
-    - 後のことを考えて動かす
-- 無駄な操作をなくす
-    - 動かした後の盤面を再現する?
-    - 焼けるかも
-- connectのundoができるようにしたい
+## TODO:
+
+- Moveの回数減らす
+- スコアの最大値を上げる
+
+1. 2つ目のクラスタは横切れるようにする
+    - 実装方針を考える
+1. パラメータをN, Kごとに最適化
+    - moveの回数が減る
+1. 高速化
+1. ビームサーチっぽいのをやる
+1. 無駄な操作をなくす
+1. ケーブルの距離が長いものは却下する
+1. clearMoveの最適化
 
 ## FIXME:
-
-- cableを縮めた時に回収していない
-    - 移動するときに、自分のcableの上を通る時は消す
 
 ## 方針
 
@@ -136,24 +122,48 @@
 - undo-可能なunionfindの導入
     - https://nyaannyaan.github.io/library/data-structure/rollback-union-find.hpp.html
 
+```
+Score distribution:
+0000 ~ 0499:
+0500 ~ 0999:
+1000 ~ 1499:
+1500 ~ 1999:
+2000 ~ 2499:
+2500 ~ 2999:
+3000 ~ 3499: ooo
+3500 ~ 3999: o
+4000 ~ 4499:
+4500 ~ 4999: oo
+5000 ~ 5499: ooooooooooooooooooooooo
+5500 ~ 5999: ooooooooooooooooooooooooooooooooooooooooo
+6000 ~ 6499: oooooooooooooooooooooo
+6500 ~ 6999: oooo
+7000 ~ 7499: o
+7500 ~ 7999:
+8000 ~ 8499:
+8500 ~ 8999:
+9000 ~ 9499:
+9500 ~ 9999:
 Worst cases:
-Case: 7, score: 2947
-Case: 37, score: 2974
-Case: 61, score: 3185
-Case: 59, score: 3382
-Case: 94, score: 3609
-Case: 46, score: 3678
-Case: 9, score: 3727
-Case: 25, score: 3788
-Case: 55, score: 4181
-Case: 87, score: 4607
+Case: 94, score: 3110
+Case: 217, score: 3344
+Case: 61, score: 3348
+Case: 46, score: 3362
+Case: 263, score: 3374
+Case: 7, score: 3422
+Case: 37, score: 3429
+Case: 59, score: 3437
+Case: 25, score: 3492
+Case: 289, score: 3558
 Best cases:
-Case: 19, score: 6604
-Case: 39, score: 6228
-Case: 99, score: 6227
-Case: 47, score: 6075
-Case: 83, score: 6067
-Case: 0, score: 6022
-Case: 38, score: 5940
-Case: 43, score: 5922
-Case: 64, score: 5912
+Case: 183, score: 7313
+Case: 123, score: 7087
+Case: 179, score: 7048
+Case: 166, score: 7045
+Case: 210, score: 7005
+Case: 138, score: 6966
+Case: 50, score: 6847
+Case: 203, score: 6811
+Case: 62, score: 6770
+Case: 198, score: 6733
+```

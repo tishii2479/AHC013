@@ -56,7 +56,7 @@ final class SolverV1: Solver {
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
         IO.log("constructSecondCluster:1", elapsedTime())
         connectOneClusterBfs(
-            types: Array(otherTypes()),
+            types: otherTypes(),
             distLimit: 20,
             costLimit: param.costLimit
         )
@@ -68,7 +68,7 @@ final class SolverV1: Solver {
         var costLimit = param.costLimit
         while currentCommands < field.computerTypes * 100 && isInTime() {
             connectOneClusterBfs(
-                types: Array(otherTypes()),
+                types: otherTypes(),
                 distLimit: 10,
                 costLimit: costLimit
             )
@@ -210,7 +210,7 @@ final class SolverV1: Solver {
         }
     }
     
-    func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100) {
+    func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
         let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
@@ -221,7 +221,7 @@ final class SolverV1: Solver {
         var largestClusterSize = 0
         var largestStartComp: Computer? = nil
         
-        for _ in 0 ..< 30 {
+        for _ in 0 ..< trialLimit {
             guard isInTime() else { return }
             guard let type = types.randomElement(),
                   let startComp: Computer = field.computerGroup[type].randomElement(),

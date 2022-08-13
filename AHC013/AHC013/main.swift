@@ -3,6 +3,7 @@ import Foundation
 struct Parameter {
     var distLimit: Int
     var costLimit: Int
+    var searchTime: Double
 }
 
 func output(moves: [Move], connects: [Connect], commandLimit: Int) {
@@ -47,11 +48,11 @@ func main() {
     }
     
     // TODO: Optimize
-    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5)
+    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5, searchTime: 2.1)
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
     
-    while elapsedTime() < 2.3 {
+    while elapsedTime() < param.searchTime {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
         let solver = SolverV1(field: field)
         let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
