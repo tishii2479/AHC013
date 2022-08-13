@@ -258,10 +258,11 @@ extension FieldV2 {
         return false
     }
     
+    // Get near computers where connectable
     func getNearComputers(
         aroundComp: Computer,
         loopLimit: Int = 50,
-        distF: (Pos, Pos) -> Int
+        distF: ((Pos, Pos) -> Int) = Util.distF
     ) -> [(Int, Computer)] {
         var ret = [(Int, Computer)]()
         

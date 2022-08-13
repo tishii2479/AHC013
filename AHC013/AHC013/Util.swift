@@ -133,4 +133,8 @@ class Util {
         }
         return dirs
     }
+    
+    static func distF(a: Pos, b: Pos) -> Int {
+        abs(b.x - a.x) + abs(b.y - a.y)
+    }
 }

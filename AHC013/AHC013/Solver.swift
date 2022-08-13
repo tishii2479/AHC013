@@ -1,6 +1,6 @@
 protocol Solver {
     init(field: Field)
-    func solve()
+    func solve(param: Parameter) -> ([Move], [Connect])
 }
 
 class SolverV1 {

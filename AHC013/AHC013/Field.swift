@@ -292,7 +292,7 @@ extension Field {
     func getNearComputers(
         aroundComp: Computer,
         loopLimit: Int = 50,
-        distF: (Pos, Pos) -> Int
+        distF: ((Pos, Pos) -> Int) = Util.distF
     ) -> [(Int, Computer)] {
         var ret = [(Int, Computer)]()
         
