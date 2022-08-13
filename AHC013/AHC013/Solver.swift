@@ -24,8 +24,6 @@ class SolverV1 {
         
 //        optimizeConnection(type: 1)
         
-        field.dump()
-        
         IO.log(elapsedTime(), currentCommands)
         
         var costLimit = param.costLimit
@@ -40,7 +38,6 @@ class SolverV1 {
 
         IO.log(elapsedTime(), currentCommands)
         
-        field.dump()
         return (performedMoves, Array(connects))
     }
     
@@ -88,7 +85,7 @@ class SolverV1 {
                             comp1: comp1, comp2: comp2, dist: dist,
                             distLimit: 100, costLimit: 100
                         ) {
-                            IO.log("disconnect: \(comp.pos), \(connectedComp.pos), connect: \(comp1.pos), \(comp2.pos), \(cluster1.comps.count), \(cluster2.comps.count)")
+//                            IO.log("disconnect: \(comp.pos), \(connectedComp.pos), connect: \(comp1.pos), \(comp2.pos), \(cluster1.comps.count), \(cluster2.comps.count)")
                             reconnected = true
                             break
                         }

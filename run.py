@@ -1,10 +1,9 @@
+import argparse
 import subprocess
 import sys
 
 
-def test_run(exe_file: str) -> None:
-    n = 100
-    run = 1
+def test_run(exe_file: str, n: int, run: int) -> None:
     total_sum = 0
     score_max = 10000
     hist_div = 20
@@ -58,7 +57,7 @@ def test_run(exe_file: str) -> None:
             + " ~ "
             + str((i + 1) * hist_w - 1).zfill(4)
             + ": "
-            + "o" * hist[i]
+            + "o" * (hist[i] * 100 // n)
         )
 
     print("Worst cases:")
@@ -72,4 +71,13 @@ def test_run(exe_file: str) -> None:
         print(f"Case: {scores[-i-1][1]}, score: {scores[-i-1][0]}")
 
 
-test_run("./main.o")
+parser = argparse.ArgumentParser()
+parser.add_argument("--n", type=int, default=100)
+parser.add_argument("--run", type=int, default=1)
+parser.add_argument("--exe", type=str, default="./main.o")
+
+args = parser.parse_args()
+
+print(args)
+
+test_run(exe_file=args.exe, n=args.n, run=args.run)
