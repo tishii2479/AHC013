@@ -49,16 +49,22 @@ func main() {
     // TODO: Optimize
     let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5)
     var solvers = [(Int, Int, SolverV1)]()
+    var mainType: Int = 1
     
-    while elapsedTime() < 2.2 {
+    while elapsedTime() < 2.3 {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
         let solver = SolverV1(field: field)
-        let (score1, cost1) = solver.constructFirstCluster(type: Int.random(in: 1 ... computerTypes), param: param)
-        IO.log("a:", score1, cost1, elapsedTime())
+        let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
+        IO.log("a:", score1, cost1, mainType, elapsedTime())
         
         let (score2, cost2) = solver.constructSecondCluster(param: param)
         solvers.append((score2, cost2, solver))
         IO.log("b:", score2, cost2, elapsedTime())
+        
+        mainType += 1
+        if mainType > computerTypes {
+            mainType = 1
+        }
     }
     
     solvers.sort(by: { (a, b) in

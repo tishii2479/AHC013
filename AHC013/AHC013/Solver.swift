@@ -43,18 +43,24 @@ final class SolverV1: Solver {
 
     func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
         mainType = type
+        IO.log("constructFirstCluster:1", elapsedTime())
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
-        connectOneClusterMst(type: type, distLimit: 20, costLimit: param.costLimit * 2)
+        IO.log("constructFirstCluster:2", elapsedTime())
+        connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
+        IO.log("constructFirstCluster:3", elapsedTime())
         connectOneClusterWithOtherComputer(type: type)
+        IO.log("constructFirstCluster:4", elapsedTime())
         return (field.calcScore(), currentCommands)
     }
     
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
+        IO.log("constructSecondCluster:1", elapsedTime())
         connectOneClusterBfs(
             types: Array(otherTypes()),
             distLimit: 20,
             costLimit: param.costLimit
         )
+        IO.log("constructSecondCluster:2", elapsedTime())
         return (field.calcScore(), currentCommands)
     }
     
@@ -63,7 +69,7 @@ final class SolverV1: Solver {
         while currentCommands < field.computerTypes * 100 && isInTime() {
             connectOneClusterBfs(
                 types: Array(otherTypes()),
-                distLimit: 20,
+                distLimit: 10,
                 costLimit: costLimit
             )
             costLimit += 1
@@ -275,7 +281,7 @@ final class SolverV1: Solver {
         let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
-            return dy + dx
+            return dy + dx + Int.random(in: -2 ... 2)
         }
         let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         

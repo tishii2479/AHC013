@@ -10,12 +10,14 @@ def test_run(exe_file: str, n: int, run: int) -> None:
     hist_w = score_max // hist_div
     hist = [0] * hist_div
     scores = []
+    max_score_sum = 0
 
     for i in range(n):
         print(exe_file + ": " + str(i), file=sys.stderr)
         sum = 0
         in_file = "in/" + str(i).zfill(4) + ".txt"
         out_file = "out/" + str(i).zfill(4) + ".txt"
+        max_score = 0
         for _ in range(run):
             _ = subprocess.run(
                 f"{exe_file} < {in_file} > {out_file}",
@@ -45,9 +47,15 @@ def test_run(exe_file: str, n: int, run: int) -> None:
             hist[score // hist_w] += 1
             scores.append((score, i))
 
+            max_score = max(max_score, score)
+
+        max_score_sum += max_score
         print("Average score for", in_file, sum / run)
-        print("Average is", total_sum / (i + 1) / run)
+        print("    Max score for", in_file, max_score)
+        print("          Average for", total_sum / (i + 1) / run)
+        print("Max score average for", in_file, max_score_sum / (i + 1))
     print("[RESULT] Average is", total_sum / n / run, ":", exe_file)
+    print("[RESULT] Max score average is", max_score_sum / n, ":", exe_file)
 
     print("Score distribution:")
 
@@ -57,7 +65,7 @@ def test_run(exe_file: str, n: int, run: int) -> None:
             + " ~ "
             + str((i + 1) * hist_w - 1).zfill(4)
             + ": "
-            + "o" * (hist[i] * 100 // n)
+            + "o" * (hist[i] * 100 // n // run)
         )
 
     print("Worst cases:")
