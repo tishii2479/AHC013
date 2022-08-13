@@ -8,7 +8,8 @@ struct SolverV2 {
     }
     
     func solve(param: Parameter) -> ([Move], [Connect]) {
-        ([], [])
+        search(compType: 1)
+        return ([], [])
     }
     
     func search(compType: Int, beamWidth: Int = 4, candidate: Int = 4) {
@@ -19,11 +20,17 @@ struct SolverV2 {
         var currentState = [State]()
         var nextState = [State]()
         
-        let initialState = State(score: 0, snapShotPoint: 0, field: field, commands: [], moveSets: [], connects: [])
+        let initialState = BfsState(score: 0, snapShotPoint: 0, field: field, commands: [], moveSets: [], connects: [])
+        guard let startComp = field.computerGroup[compType].randomElement() else {
+            return
+        }
+        initialState.cluster.add(comp: startComp)
+        initialState.awaiting.insert(startComp)
         
         currentState.append(initialState)
 
-        for _ in 0 ..< 100 {
+        for i in 0 ..< 100 {
+            IO.log(i)
             // score, beamIndex, commands
             var evalNextCommands = [(Int, Int, [CommandV2])]()
             for b in 0 ..< currentState.count {
@@ -34,8 +41,12 @@ struct SolverV2 {
                     evalNextCommands.append((scoreDiff + currentScore, b, nextCommand))
                 }
             }
+            if evalNextCommands.isEmpty {
+                IO.log("Could not raise cluster size")
+                break
+            }
             evalNextCommands.sort(by: { $0.0 > $1.0 })
-            for i in 0 ..< beamWidth {
+            for i in 0 ..< min(evalNextCommands.count, beamWidth) {
                 let (_, b, commands) = evalNextCommands[i]
                 let state = currentState[b]
                 state.snapshot()
@@ -49,6 +60,14 @@ struct SolverV2 {
             currentState = nextState
             nextState.removeAll()
         }
+        
+        guard let bestState = currentState.max(by: { (a, b) in a.score < b.score }) else {
+            IO.log("Could not get best state.")
+            return
+        }
+        bestState.field.dump()
+        print(bestState.score)
+        print(bestState.commands)
     }
 }
 
@@ -57,7 +76,7 @@ protocol Commander {
 }
 
 struct BfsCommander: Commander {
-    var nearComputers: [Computer: Set<Computer>]
+    var nearComputers: [Computer: [Computer]]
     var compType: Int
     var distLimit: Int
     
@@ -78,9 +97,10 @@ struct BfsCommander: Commander {
             guard let comp = state.awaiting.randomElement() else {
                 return candidates
             }
-            guard let newComp = nearComputers[comp]?.randomElement() else {
+            guard let newComp = nearComputers[comp]?.last else {
                 continue
             }
+            IO.log(comp.pos, newComp.pos)
             if state.cluster.comps.contains(newComp) {
                 continue
             }
@@ -94,23 +114,124 @@ struct BfsCommander: Commander {
     }
     
     func commandsToConnect(state: State, comp1: Computer, comp2: Computer) -> [CommandV2]? {
+        var commands = [CommandV2]()
+        
+        let intersections = [Pos(x: comp1.pos.x, y: comp2.pos.y), Pos(x: comp2.pos.x, y: comp1.pos.y)]
+
+        for (moveComp, targetComp) in [(comp1, comp2), (comp2, comp1)] {
+            for inter in intersections {
+                defer { state.rollback() }
+                // check no cables between inter and targetComp2.pos
+                let ignorePos = [moveComp.pos] + Util.getBetweenPos(from: moveComp.pos, to: inter) + [inter] +
+                Util.getBetweenPos(from: inter, to: targetComp.pos) + [targetComp.pos]
+                let fixedComp = [moveComp, targetComp]
+                
+                if moveComp.pos != inter {
+                    // move moveComp to inter
+                    guard state.field.canMoveComputer(to: inter, compType: moveComp.type) else {
+                        continue
+                    }
+                    guard let movesToInter = commandsToMove(state: state, comp: moveComp, to: inter, ignorePos: ignorePos, fixedComp: fixedComp) else {
+                        continue
+                    }
+                    commands.append(contentsOf: movesToInter)
+                }
+                // moves to clear inter to targetComp
+                guard let movesToClear = movesToClear(state: state, from: inter, to: targetComp.pos, ignorePos: ignorePos, fixedComp: fixedComp) else {
+                    continue
+                }
+                commands.append(contentsOf: movesToClear)
+
+                return commands
+            }
+        }
+        return nil
+    }
+    
+    func commandsToMove(state: State, comp: Computer, to: Pos, ignorePos: [Pos], fixedComp: [Computer]) -> [CommandV2]? {
+        var commands = [CommandV2]()
+        let moveToTarget = MoveSet.aligned(comp: comp, to: to)
+        guard state.performMoveSetIfPossible(moveSet: moveToTarget),
+              let movesToClear = movesToClear(state: state, from: comp.pos, to: to, ignorePos: ignorePos, fixedComp: fixedComp) else {
+            return nil
+        }
+        commands.append(moveToTarget)
+        commands.append(contentsOf: movesToClear)
+        return commands
+    }
+    
+    private func movesToClear(state: State, from: Pos, to: Pos, ignorePos: [Pos], fixedComp: [Computer]) -> [CommandV2]? {
+        guard from != to else { return [] }
+        var commands = [CommandV2]()
+        for pos in Util.getBetweenPos(from: from, to: to) {
+            if state.field.cell(pos: pos).isComputer {
+                guard let emptyPos = state.field.findNearestEmptyCell(at: pos, ignorePos: ignorePos) else {
+                    return nil
+                }
+                guard let movesToEmpty = movesToEmptyCell(state: state, from: pos, to: emptyPos, fixedComp: fixedComp) else {
+                    return nil
+                }
+                for moveSet in movesToEmpty {
+                    guard state.performMoveSetIfPossible(moveSet: moveSet) else {
+                        return nil
+                    }
+                }
+                commands.append(contentsOf: movesToEmpty)
+            }
+        }
+        return commands
+    }
+    
+    private func movesToEmptyCell(state: State, from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [MoveSet]? {
+        var dirs = Util.dirsForPath(from: from, to: to)
+        
+        // TODO: select optimal order
+        
+        for _ in 0 ..< trialLimit {
+            dirs.shuffle()
+
+            var cPos: Pos = from
+            var disallowedMove = false
+            var ret = [MoveV2]()
+            
+            for dir in dirs {
+                guard let comp = state.field.cell(pos: cPos).computer,
+                      // Cable won't extend automatically,
+                      // so another computer may come on the extended cable
+                      // instead of `comp.isMovable(dir: dir)`
+                      !comp.isConnected,
+                      !fixedComp.contains(comp),
+                      !state.field.hasConflictedCable(at: cPos) else {
+                    disallowedMove = true
+                    break
+                }
+                ret.append(MoveV2(comp: comp, dir: dir))
+                cPos += dir
+            }
+            
+            if !disallowedMove {
+                return MoveSet.fromMixedMoves(moves: ret.reversed())
+            }
+        }
+            
         return nil
     }
     
     static func getNearComputers(
         type: Int, distF: (Pos, Pos) -> Int, distLimit: Int,
         computerGroup: [Set<Computer>]
-    ) -> [Computer: Set<Computer>] {
-        var ret = [Computer: Set<Computer>]()
+    ) -> [Computer: [Computer]] {
+        var ret = [Computer: [Computer]]()
         for comp1 in computerGroup[type] {
-            ret[comp1] = Set<Computer>()
+            ret[comp1] = []
             for comp2 in computerGroup[type] {
                 guard comp1 != comp2 else { continue }
                 let dist = distF(comp1.pos, comp2.pos)
                 if dist <= distLimit {
-                    ret[comp1]?.insert(comp2)
+                    ret[comp1]?.append(comp2)
                 }
             }
+            ret[comp1]?.sort(by: { comp1.pos.dist(to: $0.pos) < comp1.pos.dist(to: $1.pos) })
         }
         return ret
     }
@@ -158,9 +279,6 @@ class BfsState: State {
             moveSets: moveSets, connects: connects, cluster: cluster, awaiting: awaiting
         )
     }
-}
-
-class MstState: State {
 }
 
 class State {

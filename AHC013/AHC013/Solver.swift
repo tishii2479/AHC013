@@ -386,7 +386,7 @@ class SolverV1 {
         return val
     }
     
-    func moveToInter(from: Pos, inter: Pos) -> [Move]? {
+    private func moveToInter(from: Pos, inter: Pos) -> [Move]? {
         guard let interMoves = Util.getMoves(from: from, to: inter) else {
             return nil
         }
@@ -394,7 +394,7 @@ class SolverV1 {
         return interMoves
     }
     
-    func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], fixedComp: [Computer], addEnd: Bool = false) -> [Move]? {
+    private func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], fixedComp: [Computer], addEnd: Bool = false) -> [Move]? {
         let path = Util.getBetweenPos(from: from, to: to, addEnd: addEnd)
         var clearMoves = [Move]()
         for pos in path {
@@ -415,7 +415,7 @@ class SolverV1 {
         return clearMoves
     }
     
-    func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
+    private func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
         var dirs = Util.dirsForPath(from: from, to: to)
         
         // TODO: select optimal order

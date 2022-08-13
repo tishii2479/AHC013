@@ -120,6 +120,10 @@ extension FieldV2 {
         comp2.connected.remove(comp1)
     }
     
+    func canMoveComputer(to pos: Pos, compType: Int) -> Bool {
+        !hasConflictedCable(at: pos, allowedCompType: compType) && !cell(pos: pos).isComputer
+    }
+    
     func canPerformMoveSet(moveSet: MoveSet) -> Bool {
         if let cable = cell(pos: moveSet.to).cable,
            cable.compType != moveSet.comp.type {
@@ -162,9 +166,6 @@ extension FieldV2 {
     }
 
     private func performMove(move: MoveV2) {
-        // ケーブルを伸ばす必要があれば伸ばす
-        // 移動したマスにケーブルがあって、それが自分につながっているものなら消す
-        // コンピュータの位置を動かす
         if let connectedComp = move.comp.connectedComp(to: move.dir.rev) {
             cells[move.comp.pos.y][move.comp.pos.x].cable = Cable(
                 compType: move.comp.type, direction: Util.fromDir(dir: move.dir),
@@ -233,11 +234,10 @@ extension FieldV2 {
     
     func hasConflictedCable(
         at pos: Pos,
-        allowedCompType: Int? = nil,
-        allowedDirection: Direction? = nil
+        allowedCompType: Int? = nil
     ) -> Bool {
         if let cable = cell(pos: pos).cable,
-           cable.compType != allowedCompType || cable.direction != allowedDirection {
+           cable.compType != allowedCompType {
             return true
         }
         return false
@@ -246,12 +246,11 @@ extension FieldV2 {
     func hasConflictedCable(
         from: Pos,
         to: Pos,
-        allowedCompType: Int? = nil,
-        allowedDirection: Direction? = nil
+        allowedCompType: Int? = nil
     ) -> Bool {
-        let path = [from] + Util.getBetweenPos(from: from, to: to) + [to]
+        let path = Util.getBetweenPos(from: from, to: to)
         for pos in path {
-            if hasConflictedCable(at: pos, allowedCompType: allowedCompType, allowedDirection: allowedDirection) {
+            if hasConflictedCable(at: pos, allowedCompType: allowedCompType) {
                 return true
             }
         }

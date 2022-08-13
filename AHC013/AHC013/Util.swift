@@ -54,15 +54,16 @@ class Util {
     }
 
     static func getBetweenPos(from: Pos, to: Pos, addEnd: Bool = false) -> [Pos] {
+        guard from != to else { return [] }
         guard isAligned(from, to) else {
-            IO.log("\(from) and \(to) is not aligned", type: .warn)
+            IO.log("getBetweenPos: \(from) and \(to) is not aligned", type: .warn)
             return []
         }
 
         var ret = [Pos]()
     
         var cPos = from
-        guard let dir = getDir(from: from, to: to).first else {
+        guard let dir = toDir(from: from, to: to) else {
             IO.log("Could not get dir for \(from), \(to)", type: .warn)
             return ret
         }

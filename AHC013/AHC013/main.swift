@@ -45,9 +45,9 @@ func main() {
     for i in 0 ..< fieldSize {
         fieldInput[i] = IO.readString()
     }
-    let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
+    let field = FieldV2(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
     
-    let solver = SolverV1(field: field)
+    let solver = SolverV2(field: field)
     
     // TODO: Optimize
     let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5)

@@ -227,12 +227,26 @@ struct MoveSet: CommandV2 {
     
     static func aligned(comp: Computer, to: Pos) -> MoveSet {
         guard Util.isAligned(comp.pos, to) else {
-            IO.log("\(comp.pos) and \(to) is not aligned", type: .error)
+            IO.log("Moveset.aligned, \(comp.pos) and \(to) is not aligned", type: .error)
             return MoveSet(comp: comp, moves: [])
         }
         let dirs = Util.dirsForPath(from: comp.pos, to: to)
         let moves = dirs.map { MoveV2(comp: comp, dir: $0 )}
         return MoveSet(comp: comp, moves: moves)
+    }
+    
+    static func fromMixedMoves(moves: [MoveV2]) -> [MoveSet] {
+        var moveSets = [MoveSet]()
+        for move in moves {
+            if let last = moveSets.last,
+               last.comp == move.comp {
+                moveSets[moveSets.count - 1].moves.append(move)
+            }
+            else {
+                moveSets.append(MoveSet(comp: move.comp, moves: [move]))
+            }
+        }
+        return moveSets
     }
 }
 
