@@ -22,7 +22,9 @@ class SolverV1 {
         connectOneClusterMst(type: 1, distLimit: 50, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: 1)
         
-        optimizeConnection(type: 1)
+//        optimizeConnection(type: 1)
+        
+        field.dump()
         
         IO.log(elapsedTime(), currentCommands)
         
@@ -35,6 +37,10 @@ class SolverV1 {
             )
             costLimit += 1
         }
+
+        IO.log(elapsedTime(), currentCommands)
+        
+        field.dump()
         return (performedMoves, Array(connects))
     }
     
@@ -282,7 +288,7 @@ class SolverV1 {
                             continue
                         }
                         // check extend cables
-                        if fromComp.hasConnectedComp(to: dir.rev),
+                        if fromComp.connectedComp(to: dir.rev) != nil,
                            !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
                             continue
                         }
@@ -450,7 +456,7 @@ class SolverV1 {
     private func performTemporaryMoves(moves: [Move]) {
         for move in moves {
             temporaryMoves.append(move)
-            field.performMove(move: move)
+            field.performMove(move: move, isTemporary: true)
         }
     }
 

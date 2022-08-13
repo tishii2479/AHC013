@@ -76,10 +76,6 @@ class Field {
     func cell(pos: Pos) -> Cell {
         cells[pos.y][pos.x]
     }
-
-    private func reverseConnect(connect: Connect) {
-        
-    }
     
     func reverseMoves(moves: [Move]) {
         for move in moves.reversed() {
@@ -87,11 +83,19 @@ class Field {
         }
     }
     
-    func performMove(move: Move) {
+    func performMove(move: Move, isTemporary: Bool = false) {
         guard let comp = cell(pos: move.pos).computer else {
             IO.log("Could not find computer at: \(move.pos)", type: .error)
             dump()
             fatalError()
+        }
+        if !isTemporary,
+           let connectedComp = comp.connectedComp(to: move.dir.rev) {
+            // extend cable
+            cells[comp.pos.y][comp.pos.x].cable = Cable(
+                compType: comp.type, direction: Util.fromDir(dir: move.dir),
+                comp1: comp, comp2: connectedComp
+            )
         }
 //        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
         moveComputer(comp: comp, to: comp.pos + move.dir)
@@ -158,12 +162,22 @@ class Field {
             cells[movedComp.pos.y][movedComp.pos.x].cable = nil
             
             for pos in Util.getBetweenPos(from: cable.comp1.pos, to: movedComp.pos) {
+                guard !cell(pos: pos).isComputer else {
+                    IO.log("\(pos) is not empty to place cables", type: .error)
+                    dump()
+                    fatalError()
+                }
                 cells[pos.y][pos.x].cable = Cable(
                     compType: cable.comp1.type, direction: Util.fromDir(dir: dir),
                     comp1: cable.comp1, comp2: movedComp
                 )
             }
             for pos in Util.getBetweenPos(from: movedComp.pos, to: cable.comp2.pos) {
+                guard !cell(pos: pos).isComputer else {
+                    IO.log("\(pos) is not empty to place cables", type: .error)
+                    dump()
+                    fatalError()
+                }
                 cells[pos.y][pos.x].cable = Cable(
                     compType: cable.comp2.type, direction: Util.fromDir(dir: dir),
                     comp1: movedComp, comp2: cable.comp2
@@ -175,6 +189,11 @@ class Field {
             comp2.connected.insert(comp1)
 
             for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
+                guard !cell(pos: pos).isComputer else {
+                    IO.log("\(pos) is not empty to place cables", type: .error)
+                    dump()
+                    fatalError()
+                }
                 cells[pos.y][pos.x].cable = Cable(
                     compType: comp1.type, direction: Util.fromDir(dir: dir),
                     comp1: comp1, comp2: comp2

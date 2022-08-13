@@ -37,14 +37,14 @@ class Computer {
         return true
     }
     
-    func hasConnectedComp(to dir: Dir) -> Bool {
+    func connectedComp(to dir: Dir) -> Computer? {
         for comp in connected {
             if let compDir = Util.toDir(from: pos, to: comp.pos),
                dir == compDir {
-                return true
+                return comp
             }
         }
-        return false
+        return nil
     }
 }
 
