@@ -113,10 +113,6 @@ extension FieldV2 {
             IO.log("Connection does not exist between \(comp1.pos), \(comp2.pos)", type: .error)
             return
         }
-        guard let direction = Util.direction(from: comp1.pos, to: comp2.pos) else {
-            IO.log("Could not erase connect between \(comp1.pos), \(comp2.pos)", type: .error)
-            return
-        }
         for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
             cells[pos.y][pos.x].cable = nil
         }

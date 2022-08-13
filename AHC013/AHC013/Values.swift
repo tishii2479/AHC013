@@ -68,7 +68,7 @@ struct Cluster {
     var comps: Set<Computer>
     var typeCounts: [Int]
     
-    init(comps: Set<Computer>, types: Int) {
+    init(comps: Set<Computer>, types: Int = 5) {
         self.comps = Set<Computer>()
         typeCounts = [Int](repeating: 0, count: types + 1)
         for comp in comps {
@@ -186,7 +186,10 @@ protocol Command {
     var outValue: String { get }
 }
 
-struct MoveSet {
+protocol CommandV2 {
+}
+
+struct MoveSet: CommandV2 {
     var comp: Computer
     var moves: [MoveV2]
     
@@ -259,7 +262,7 @@ struct Move: Command {
     }
 }
 
-struct Connect: Command {
+struct Connect: Command, CommandV2 {
     var comp1: Computer
     var comp2: Computer
     
