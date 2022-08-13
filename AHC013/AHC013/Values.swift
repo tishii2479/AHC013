@@ -37,6 +37,10 @@ class Computer {
         return true
     }
     
+    func isConnected(to comp: Computer) -> Bool {
+        connected.contains(comp)
+    }
+    
     func connectedComp(to dir: Dir) -> Computer? {
         for comp in connected {
             if let compDir = Util.toDir(from: pos, to: comp.pos),
@@ -182,12 +186,76 @@ protocol Command {
     var outValue: String { get }
 }
 
+struct MoveSet {
+    var comp: Computer
+    var moves: [MoveV2]
+    
+    init(comp: Computer, moves: [MoveV2]) {
+        self.comp = comp
+        self.moves = moves
+    }
+    
+    init(comp: Computer, dirs: [Dir]) {
+        self.comp = comp
+        self.moves = dirs.map { MoveV2(comp: comp, dir: $0 )}
+    }
+    
+    var to: Pos {
+        let path = path()
+        return path[path.count - 1]
+    }
+    
+    // include end
+    func path() -> [Pos] {
+        var ret = [Pos]()
+        var cPos = comp.pos
+        for move in moves {
+            ret.append(cPos + move.dir)
+            cPos += move.dir
+        }
+        return ret
+    }
+    
+    func rev() -> MoveSet {
+        var ret = self
+        ret.moves = ret.moves.reversed().map { $0.rev() }
+        return ret
+    }
+    
+    static func aligned(comp: Computer, to: Pos) -> MoveSet {
+        guard Util.isAligned(comp.pos, to) else {
+            IO.log("\(comp.pos) and \(to) is not aligned", type: .error)
+            return MoveSet(comp: comp, moves: [])
+        }
+        let dirs = Util.dirsForPath(from: comp.pos, to: to)
+        let moves = dirs.map { MoveV2(comp: comp, dir: $0 )}
+        return MoveSet(comp: comp, moves: moves)
+    }
+}
+
+struct MoveV2 {
+    var comp: Computer
+    var dir: Dir
+    
+    var nextPos: Pos {
+        comp.pos + dir
+    }
+    
+    func rev() -> MoveV2 {
+        MoveV2(comp: comp, dir: dir.rev)
+    }
+}
+
 struct Move: Command {
     var pos: Pos
     var dir: Dir
     
     var outValue: String {
         "\(pos.y) \(pos.x) \((pos + dir).y) \((pos + dir).x)"
+    }
+    
+    func rev() -> Move {
+        Move(pos: pos + dir, dir: dir.rev)
     }
 }
 

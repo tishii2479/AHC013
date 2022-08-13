@@ -30,6 +30,7 @@ class Util {
         return dirs[0]
     }
 
+    // TODO: Move to Direction.static
     static func fromDir(dir: Dir) -> Direction {
         switch dir {
         case .left:
@@ -41,6 +42,15 @@ class Util {
         case .down:
             return .vertical
         }
+    }
+    
+    // TODO: Move to Direction.static
+    static func direction(from: Pos, to: Pos) -> Direction? {
+        guard let dir = toDir(from: from, to: to) else {
+            IO.log("Could not get dir from: \(from) to: \(to)", type: .warn)
+            return nil
+        }
+        return fromDir(dir: dir)
     }
 
     static func getBetweenPos(from: Pos, to: Pos, addEnd: Bool = false) -> [Pos] {

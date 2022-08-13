@@ -7,14 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B12CC44F28A515D4007130AB /* UtilTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12CC44E28A515D4007130AB /* UtilTest.swift */; };
+		B101E04528A76F3500E7809C /* FieldV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101E04428A76F3500E7809C /* FieldV2.swift */; };
+		B101E04728A76F4100E7809C /* SolverV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101E04628A76F4100E7809C /* SolverV2.swift */; };
+		B101E04828A76F4700E7809C /* SolverV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101E04628A76F4100E7809C /* SolverV2.swift */; };
+		B101E04928A76F4700E7809C /* FieldV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101E04428A76F3500E7809C /* FieldV2.swift */; };
+		B101E04B28A76F5900E7809C /* FieldV2Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101E04A28A76F5900E7809C /* FieldV2Test.swift */; };
+		B101E04D28A76F6400E7809C /* SolverV2Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101E04C28A76F6400E7809C /* SolverV2Test.swift */; };
 		B15AA07528A35C0600F89686 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AA07428A35C0600F89686 /* main.swift */; };
 		B15AA08E28A35D8600F89686 /* DataStructures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AA08C28A35D8600F89686 /* DataStructures.swift */; };
 		B15AA08F28A35D8600F89686 /* IO.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AA08D28A35D8600F89686 /* IO.swift */; };
 		B1AA4A5D28A3BA1B001706B3 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A5C28A3BA1B001706B3 /* Field.swift */; };
 		B1AA4A5F28A3BA9A001706B3 /* Values.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A5E28A3BA9A001706B3 /* Values.swift */; };
 		B1AA4A6128A3C00C001706B3 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6028A3C00C001706B3 /* Util.swift */; };
-		B1AA4A6328A3C61F001706B3 /* FieldTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6228A3C61F001706B3 /* FieldTest.swift */; };
 		B1AA4A6828A3C626001706B3 /* DataStructures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AA08C28A35D8600F89686 /* DataStructures.swift */; };
 		B1AA4A6928A3C626001706B3 /* Values.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A5E28A3BA9A001706B3 /* Values.swift */; };
 		B1AA4A6A28A3C626001706B3 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6028A3C00C001706B3 /* Util.swift */; };
@@ -38,7 +42,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		B12CC44E28A515D4007130AB /* UtilTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UtilTest.swift; sourceTree = "<group>"; };
+		B101E04428A76F3500E7809C /* FieldV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldV2.swift; sourceTree = "<group>"; };
+		B101E04628A76F4100E7809C /* SolverV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolverV2.swift; sourceTree = "<group>"; };
+		B101E04A28A76F5900E7809C /* FieldV2Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FieldV2Test.swift; path = AHC013/FieldV2Test.swift; sourceTree = SOURCE_ROOT; };
+		B101E04C28A76F6400E7809C /* SolverV2Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolverV2Test.swift; sourceTree = "<group>"; };
 		B15AA07128A35C0600F89686 /* AHC013 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = AHC013; sourceTree = BUILT_PRODUCTS_DIR; };
 		B15AA07428A35C0600F89686 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B15AA08328A35C4E00F89686 /* AHC013Test.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AHC013Test.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -47,7 +54,6 @@
 		B1AA4A5C28A3BA1B001706B3 /* Field.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Field.swift; sourceTree = "<group>"; };
 		B1AA4A5E28A3BA9A001706B3 /* Values.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Values.swift; sourceTree = "<group>"; };
 		B1AA4A6028A3C00C001706B3 /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
-		B1AA4A6228A3C61F001706B3 /* FieldTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTest.swift; sourceTree = "<group>"; };
 		B1AA4A6E28A3D55F001706B3 /* Solver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Solver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -93,6 +99,8 @@
 				B1AA4A6028A3C00C001706B3 /* Util.swift */,
 				B15AA07428A35C0600F89686 /* main.swift */,
 				B1AA4A6E28A3D55F001706B3 /* Solver.swift */,
+				B101E04428A76F3500E7809C /* FieldV2.swift */,
+				B101E04628A76F4100E7809C /* SolverV2.swift */,
 				B1AA4A5C28A3BA1B001706B3 /* Field.swift */,
 				B1AA4A5E28A3BA9A001706B3 /* Values.swift */,
 				B15AA08D28A35D8600F89686 /* IO.swift */,
@@ -104,8 +112,8 @@
 		B15AA08428A35C4E00F89686 /* AHC013Test */ = {
 			isa = PBXGroup;
 			children = (
-				B1AA4A6228A3C61F001706B3 /* FieldTest.swift */,
-				B12CC44E28A515D4007130AB /* UtilTest.swift */,
+				B101E04A28A76F5900E7809C /* FieldV2Test.swift */,
+				B101E04C28A76F6400E7809C /* SolverV2Test.swift */,
 			);
 			path = AHC013Test;
 			sourceTree = "<group>";
@@ -201,8 +209,10 @@
 			files = (
 				B15AA07528A35C0600F89686 /* main.swift in Sources */,
 				B1AA4A6128A3C00C001706B3 /* Util.swift in Sources */,
+				B101E04728A76F4100E7809C /* SolverV2.swift in Sources */,
 				B15AA08E28A35D8600F89686 /* DataStructures.swift in Sources */,
 				B1AA4A5F28A3BA9A001706B3 /* Values.swift in Sources */,
+				B101E04528A76F3500E7809C /* FieldV2.swift in Sources */,
 				B1AA4A5D28A3BA1B001706B3 /* Field.swift in Sources */,
 				B1AA4A6F28A3D55F001706B3 /* Solver.swift in Sources */,
 				B15AA08F28A35D8600F89686 /* IO.swift in Sources */,
@@ -213,13 +223,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B1AA4A6328A3C61F001706B3 /* FieldTest.swift in Sources */,
 				B1AA4A6B28A3C626001706B3 /* main.swift in Sources */,
+				B101E04828A76F4700E7809C /* SolverV2.swift in Sources */,
 				B1AA4A7028A3D55F001706B3 /* Solver.swift in Sources */,
+				B101E04B28A76F5900E7809C /* FieldV2Test.swift in Sources */,
 				B1AA4A6C28A3C626001706B3 /* Field.swift in Sources */,
-				B12CC44F28A515D4007130AB /* UtilTest.swift in Sources */,
+				B101E04D28A76F6400E7809C /* SolverV2Test.swift in Sources */,
 				B1AA4A6928A3C626001706B3 /* Values.swift in Sources */,
 				B1AA4A6828A3C626001706B3 /* DataStructures.swift in Sources */,
+				B101E04928A76F4700E7809C /* FieldV2.swift in Sources */,
 				B1AA4A6D28A3C626001706B3 /* IO.swift in Sources */,
 				B1AA4A6A28A3C626001706B3 /* Util.swift in Sources */,
 			);
