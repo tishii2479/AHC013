@@ -20,6 +20,20 @@ class Field {
     private(set) var computers: [Computer]
     private(set) var computerGroup: [Set<Computer>]
     
+    init(
+        size: Int,
+        computerTypes: Int,
+        cells: [[Cell]],
+        computers: [Computer],
+        computerGroup: [Set<Computer>]
+    ) {
+        self.size = size
+        self.computerTypes = computerTypes
+        self.cells = cells
+        self.computers = computers
+        self.computerGroup = computerGroup
+    }
+    
     init(size: Int, computerTypes: Int, fieldInput: [String]) {
         self.size = size
         self.computerTypes = computerTypes
@@ -48,26 +62,6 @@ class Field {
                     cells[i][j] = Cell(computer: comp, cable: nil)
                     computers.append(comp)
                     computerGroup[comp.type].insert(comp)
-                }
-            }
-        }
-    }
-    
-    init(size: Int, computerTypes: Int, cells: [[Cell]]) {
-        self.size = size
-        self.computerTypes = computerTypes
-        self.cells = cells
-        self.computers = []
-        self.computerGroup = [Set<Computer>](
-            repeating: Set<Computer>(),
-            count: computerTypes + 1
-        )
-        
-        for i in 0 ..< size {
-            for j in 0 ..< size {
-                if let comp = cells[i][j].computer {
-                    computerGroup[comp.type].insert(comp)
-                    computers.append(comp)
                 }
             }
         }
@@ -374,5 +368,52 @@ extension Field {
             seen.formUnion(cluster.comps)
         }
         return score
+    }
+    
+    func copy() -> Field {
+        var computerDicts: [Computer: Computer] = [:]
+        for comp in computers {
+            computerDicts[comp] = Computer(id: comp.id, type: comp.type, pos: comp.pos)
+        }
+        for (oldComp, newComp) in computerDicts {
+            for comp in oldComp.connected {
+                guard let comp = computerDicts[comp] else {
+                    IO.log("Failed to copy field", type: .error)
+                    break
+                }
+                newComp.connected.insert(comp)
+            }
+        }
+        let newComputers = Array(computerDicts.values)
+        var newCells = cells
+        for i in 0 ..< size {
+            for j in 0 ..< size {
+                if let comp = newCells[i][j].computer {
+                    newCells[i][j].computer = computerDicts[comp]
+                }
+                if let cable = newCells[i][j].cable,
+                   let comp1 = computerDicts[cable.comp1],
+                   let comp2 = computerDicts[cable.comp1] {
+                    newCells[i][j].cable = Cable(
+                        compType: cable.compType, direction: cable.direction,
+                        comp1: comp1,
+                        comp2: comp2
+                    )
+                }
+            }
+        }
+        var newComputerGroups = computerGroup
+        for i in 1 ... computerTypes {
+            newComputerGroups[i] = Set(
+                newComputerGroups[i].map {
+                    computerDicts[$0]!
+                }
+            )
+        }
+        
+        return Field(
+            size: size, computerTypes: computerTypes, cells: newCells,
+            computers: newComputers, computerGroup: newComputerGroups
+        )
     }
 }

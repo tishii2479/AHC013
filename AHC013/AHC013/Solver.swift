@@ -1,13 +1,13 @@
 protocol Solver {
     init(field: Field)
-    func solve()
 }
 
-class SolverV1 {
-    private let field: Field
-    private var performedMoves: [Move] = []
-    private var connects = Set<Connect>()
+final class SolverV1: Solver {
+    let field: Field
+    private(set) var performedMoves: [Move] = []
+    private(set) var connects = Set<Connect>()
     private var temporaryMoves: [Move] = []
+    private var mainType: Int = 0
     
     private var currentCommands: Int {
         performedMoves.count + connects.count
@@ -16,29 +16,59 @@ class SolverV1 {
     init(field: Field) {
         self.field = field
     }
+    
+    init(field: Field, performedMoves: [Move], connects: Set<Connect>) {
+        self.field = field
+        self.performedMoves = performedMoves
+        self.connects = connects
+    }
+    
+    func otherTypes() -> [Int] {
+        var ret = [Int]()
+        for i in 1 ... field.computerTypes {
+            if i != mainType {
+                ret.append(i)
+            }
+        }
+        return ret
+    }
+    
+    func copy() -> SolverV1 {
+        SolverV1(
+            field: field.copy(),
+            performedMoves: performedMoves,
+            connects: connects
+        )
+    }
 
-    func solve(param: Parameter) -> ([Move], [Connect]) {
-        connectOneClusterMst(type: 1, distLimit: param.distLimit, costLimit: param.costLimit)
-        connectOneClusterMst(type: 1, distLimit: 50, costLimit: param.costLimit * 2)
-        connectOneClusterWithOtherComputer(type: 1)
-        
-//        optimizeConnection(type: 1)
-        
-        IO.log(elapsedTime(), currentCommands)
-        
+    func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
+        mainType = type
+        connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
+        connectOneClusterMst(type: type, distLimit: 20, costLimit: param.costLimit * 2)
+        connectOneClusterWithOtherComputer(type: type)
+        return (field.calcScore(), currentCommands)
+    }
+    
+    func constructSecondCluster(param: Parameter) -> (Int, Int) {
+        connectOneClusterBfs(
+            types: Array(otherTypes()),
+            distLimit: 20,
+            costLimit: param.costLimit
+        )
+        return (field.calcScore(), currentCommands)
+    }
+    
+    func constructOtherClusters(param: Parameter) -> (Int, Int) {
         var costLimit = param.costLimit
         while currentCommands < field.computerTypes * 100 && isInTime() {
             connectOneClusterBfs(
-                types: Array(2 ... field.computerTypes),
-                distLimit: 50,
+                types: Array(otherTypes()),
+                distLimit: 20,
                 costLimit: costLimit
             )
             costLimit += 1
         }
-
-        IO.log(elapsedTime(), currentCommands)
-        
-        return (performedMoves, Array(connects))
+        return (field.calcScore(), currentCommands)
     }
     
     func optimizeConnection(type: Int, considerComp: Int = 30) {
@@ -188,7 +218,8 @@ class SolverV1 {
         for _ in 0 ..< 30 {
             guard isInTime() else { return }
             guard let type = types.randomElement(),
-                  let startComp: Computer = field.computerGroup[type].randomElement() else {
+                  let startComp: Computer = field.computerGroup[type].randomElement(),
+                  !startComp.isConnected else {
                 continue
             }
             let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: distF)
@@ -202,7 +233,7 @@ class SolverV1 {
             return
         }
         
-//        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
+        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
         
         var q = Queue<Computer>()
         q.push(startComp)

@@ -45,17 +45,42 @@ func main() {
     for i in 0 ..< fieldSize {
         fieldInput[i] = IO.readString()
     }
-    let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
-    
-    let solver = SolverV1(field: field)
     
     // TODO: Optimize
     let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5)
-    let (moves, connects) = solver.solve(param: param)
+    var solvers = [(Int, Int, SolverV1)]()
     
-    output(moves: moves, connects: connects, commandLimit: computerTypes * 100)
+    while elapsedTime() < 2.2 {
+        let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
+        let solver = SolverV1(field: field)
+        let (score1, cost1) = solver.constructFirstCluster(type: Int.random(in: 1 ... computerTypes), param: param)
+        IO.log("a:", score1, cost1, elapsedTime())
+        
+        let (score2, cost2) = solver.constructSecondCluster(param: param)
+        solvers.append((score2, cost2, solver))
+        IO.log("b:", score2, cost2, elapsedTime())
+    }
     
-    IO.log("Score:", field.calcScore())
+    solvers.sort(by: { (a, b) in
+        if a.0 != b.0 { return a.0 > b.0 }
+        return a.1 < b.1
+    })
+    
+    IO.log(solvers.map{ $0.0 })
+    
+    guard let bestSolver = solvers.first?.2 else {
+        return
+    }
+
+    let _ = bestSolver.constructOtherClusters(param: param)
+
+    output(
+        moves: bestSolver.performedMoves,
+        connects: Array(bestSolver.connects),
+        commandLimit: computerTypes * 100
+    )
+    
+    IO.log("Score:", bestSolver.field.calcScore())
     IO.log("Runtime:", elapsedTime())
 }
 
