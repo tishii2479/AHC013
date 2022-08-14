@@ -2,7 +2,7 @@ import Foundation
 
 enum Time {
     private static var startDate = Date()
-    static var timeLimit: Double = 2.7
+    static var timeLimit: Double = 2.8
     
     static func start() {
         startDate = Date()

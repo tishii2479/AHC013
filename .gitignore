@@ -3,5 +3,9 @@ out/
 tools/
 .vscode/
 .mypy_cache/
+tmp/
 *.o
 xcuserdata
+*.ipynb
+__pycache__
+.ipynb_checkpoints

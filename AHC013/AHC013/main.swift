@@ -48,7 +48,7 @@ func main() {
     }
     
     // TODO: Optimize
-    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5, searchTime: 2.1)
+    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5, searchTime: 2.2)
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
 
@@ -86,7 +86,7 @@ func main() {
         return
     }
     
-    Time.timeLimit = 2.7
+    Time.timeLimit = 2.8
 
     let (score, _) = bestSolver.constructOtherClusters(param: param)
     
