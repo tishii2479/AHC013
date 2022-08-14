@@ -25,13 +25,9 @@ final class SolverV1: Solver {
 
     func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
         mainType = type
-        IO.log("constructFirstCluster:1", Time.elapsedTime(), type: .log)
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
-        IO.log("constructFirstCluster:2", Time.elapsedTime(), type: .log)
         connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
-        IO.log("constructFirstCluster:3", Time.elapsedTime(), type: .log)
         connectOneClusterWithOtherComputer(type: type)
-        IO.log("constructFirstCluster:4", Time.elapsedTime(), type: .log)
         return (field.calcScore(), currentCommands)
     }
     
@@ -61,13 +57,7 @@ final class SolverV1: Solver {
         type: Int, otherCompLimit: Int = 1,
         distLimit: Int = 4, costLimit: Int = 10
     ) {
-        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
-            let dy = abs(b.y - a.y)
-            let dx = abs(b.x - a.x)
-            return dy + dx
-        }
-
-        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: Util.distF)
         for (dist, (comp1, comp2)) in compPair {
             guard Time.isInTime() else { return }
             guard currentCommands + dist <= field.computerTypes * 100 else {
@@ -135,14 +125,8 @@ final class SolverV1: Solver {
     
     func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
         guard Time.isInTime() else { return }
-        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
-            let dy = abs(b.y - a.y)
-            let dx = abs(b.x - a.x)
-            return dy + dx
-        }
-        
         // TODO: cache?
-        let nearComputers = getNearCompPair(types: types, distF: distF, distLimit: distLimit)
+        let nearComputers = getNearCompPair(types: types, distF: Util.distF, distLimit: distLimit)
         var largestClusterSize = 0
         var largestStartComp: Computer? = nil
         
@@ -154,7 +138,7 @@ final class SolverV1: Solver {
                   !startComp.isConnected else {
                 continue
             }
-            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: distF)
+            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: Util.distF)
             if reachableComps.count > largestClusterSize {
                 largestClusterSize = reachableComps.count
                 largestStartComp = startComp
@@ -166,7 +150,7 @@ final class SolverV1: Solver {
             return
         }
         
-        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
+//        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
         
         var q = Queue<Computer>()
         q.push(startComp)
@@ -200,7 +184,8 @@ final class SolverV1: Solver {
             for comp in field.computerGroup[type] {
                 let nearComp = field.getNearComputers(
                     aroundComp: comp,
-                    loopLimit: field.size * field.size,
+                    loopLimit: distLimit * distLimit,
+                    distLimit: distLimit,
                     distF: distF
                 )
                 ret[comp] = nearComp
@@ -227,8 +212,10 @@ final class SolverV1: Solver {
                 if ret[comp2] == nil {
                     ret[comp2] = []
                 }
-                ret[comp1]?.append((dist, comp2))
-                ret[comp2]?.append((dist, comp1))
+                if dist <= distLimit {
+                    ret[comp1]?.append((dist, comp2))
+                    ret[comp2]?.append((dist, comp1))
+                }
             }
         }
         IO.log("getNearCompPair:end", Time.elapsedTime())
@@ -236,12 +223,7 @@ final class SolverV1: Solver {
     }
     
     func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
-        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
-            let dy = abs(b.y - a.y)
-            let dx = abs(b.x - a.x)
-            return dy + dx + Int.random(in: -2 ... 2)
-        }
-        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: Util.distF)
         
         for (dist, (comp1, comp2)) in compPair {
             guard Time.isInTime() else { return }
@@ -410,9 +392,7 @@ final class SolverV1: Solver {
     
     func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
         var dirs = Util.dirsForPath(from: from, to: to)
-        
-        // TODO: select optimal order
-        
+
         for _ in 0 ..< trialLimit {
             dirs.shuffle()
 

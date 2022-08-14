@@ -55,6 +55,7 @@ func main() {
     Time.timeLimit = param.searchTime
 
     while Time.elapsedTime() < param.searchTime {
+//    for _ in 0 ..< 1 {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
         let solver = SolverV1(field: field)
         let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)

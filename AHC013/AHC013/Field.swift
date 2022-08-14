@@ -287,6 +287,7 @@ extension Field {
     func getNearComputers(
         aroundComp: Computer,
         loopLimit: Int = 50,
+        distLimit: Int = 20,
         distF: (Pos, Pos) -> Int
     ) -> [(Int, Computer)] {
         var ret = [(Int, Computer)]()
@@ -303,6 +304,7 @@ extension Field {
             for dir in Dir.all {
                 let nextPos = v + dir
                 if nextPos.isValid(boardSize: size)
+                    && distF(aroundComp.pos, nextPos) <= distLimit
                     && !seenPos.contains(nextPos)
                     && cell(pos: nextPos).computer?.isConnected != true
                     && cell(pos: nextPos).cable == nil {
