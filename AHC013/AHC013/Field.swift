@@ -288,7 +288,8 @@ extension Field {
         aroundComp: Computer,
         loopLimit: Int = 50,
         distLimit: Int = 20,
-        distF: (Pos, Pos) -> Int
+        distF: (Pos, Pos) -> Int,
+        maxSize: Int = 100
     ) -> [(Int, Computer)] {
         var ret = [(Int, Computer)]()
         
@@ -302,6 +303,9 @@ extension Field {
                 break
             }
             for dir in Dir.all {
+                guard ret.count <= maxSize else {
+                    break
+                }
                 let nextPos = v + dir
                 if nextPos.isValid(boardSize: size)
                     && distF(aroundComp.pos, nextPos) <= distLimit

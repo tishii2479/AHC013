@@ -9,12 +9,18 @@ final class SolverV1: Solver {
     private var temporaryMoves: [Move] = []
     private var mainType: Int = 0
     
+    private var nearComputers: [Computer: [(Int, Computer)]] = [:]
+    
     private var currentCommands: Int {
         performedMoves.count + connects.count
     }
 
     init(field: Field) {
         self.field = field
+        nearComputers = getNearCompPair(
+            types: Array(1 ... field.computerTypes), distF: Util.distF,
+            distLimit: 20
+        )
     }
     
     init(field: Field, performedMoves: [Move], connects: Set<Connect>) {
@@ -125,8 +131,6 @@ final class SolverV1: Solver {
     
     func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
         guard Time.isInTime() else { return }
-        // TODO: cache?
-        let nearComputers = getNearCompPair(types: types, distF: Util.distF, distLimit: distLimit)
         var largestClusterSize = 0
         var largestStartComp: Computer? = nil
         
@@ -176,7 +180,7 @@ final class SolverV1: Solver {
     // ISSUE: slow
     func getNearCompPair(
         types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int
+        distLimit: Int, maxSize: Int = 10
     ) -> [Computer: [(Int, Computer)]] {
         IO.log("getNearCompPair:start", Time.elapsedTime())
         var ret = [Computer: [(Int, Computer)]]()
@@ -186,7 +190,8 @@ final class SolverV1: Solver {
                     aroundComp: comp,
                     loopLimit: distLimit * distLimit,
                     distLimit: distLimit,
-                    distF: distF
+                    distF: distF,
+                    maxSize: maxSize
                 )
                 ret[comp] = nearComp
             }
@@ -195,8 +200,8 @@ final class SolverV1: Solver {
         return ret
     }
     
-    // ISSUE: slow
     // TODO: change process
+    // ISSUE: slow
     // Not used
     func getNearCompPair2(
         types: [Int], distF: (Pos, Pos) -> Int,
@@ -279,7 +284,6 @@ final class SolverV1: Solver {
                        ) {
                         let moves = moves1 + moveToInter + moves2
 
-                        // TODO: consider cable length
                         let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
                         let newCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
                         let didImproveScore = newCluster.calcScore() > currentScore
@@ -393,15 +397,20 @@ final class SolverV1: Solver {
     func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
         var dirs = Util.dirsForPath(from: from, to: to)
 
-        for _ in 0 ..< trialLimit {
+        var bestRet: [Move]? = nil
+        var bestScore = -123456
+        
+        for _ in 0 ..< min(dirs.count * 2, trialLimit) {
             dirs.shuffle()
 
             var cPos: Pos = from
             var disallowedMove = false
             var ret = [Move]()
+            var score = 0
             
             for dir in dirs {
                 guard let comp = field.cell(pos: cPos).computer,
+                      let nearComps = nearComputers[comp],
                       // Cable won't extend automatically,
                       // so another computer may come on the extended cable
                       // instead of `comp.isMovable(dir: dir)`
@@ -411,16 +420,22 @@ final class SolverV1: Solver {
                     disallowedMove = true
                     break
                 }
+                for (_, nearComp) in nearComps.prefix(5) {
+                    let scoreDelta = Util.isAligned(nearComp.pos, comp.pos + dir) ? 1 : 0
+                        - (Util.isAligned(nearComp.pos, comp.pos) ? 1 : 0)
+                    score += scoreDelta
+                }
                 ret.append(Move(pos: cPos, dir: dir))
                 cPos += dir
             }
             
-            if !disallowedMove {
-                return ret.reversed()
+            if !disallowedMove && score > bestScore {
+                bestScore = score
+                bestRet = ret
             }
         }
-            
-        return nil
+
+        return bestRet?.reversed()
     }
     
     private func performTemporaryMoves(moves: [Move]) {
