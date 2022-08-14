@@ -19,6 +19,8 @@ class Field {
     private(set) var cells: [[Cell]]
     private(set) var computers: [Computer]
     private(set) var computerGroup: [Set<Computer>]
+    private var clusters: [Cluster]
+    private let uf: UnionFind
     
     init(
         size: Int,
@@ -32,6 +34,13 @@ class Field {
         self.cells = cells
         self.computers = computers
         self.computerGroup = computerGroup
+        self.clusters = [Cluster](
+            repeating: Cluster(comps: [], types: computerTypes),
+            count: computerTypes * 100)
+        for i in 0 ..< computerTypes * 100 {
+            self.clusters[i].add(comp: computers[i])
+        }
+        self.uf = UnionFind(n: computerTypes * 100)
     }
     
     init(size: Int, computerTypes: Int, fieldInput: [String]) {
@@ -49,6 +58,10 @@ class Field {
             repeating: Set<Computer>(),
             count: computerTypes + 1
         )
+        self.clusters = [Cluster](
+            repeating: Cluster(comps: [], types: computerTypes),
+            count: computerTypes * 100)
+        self.uf = UnionFind(n: computerTypes * 100)
         
         for i in 0 ..< size {
             for j in 0 ..< size {
@@ -64,6 +77,9 @@ class Field {
                     computerGroup[comp.type].insert(comp)
                 }
             }
+        }
+        for i in 0 ..< computerTypes * 100 {
+            self.clusters[i].add(comp: computers[i])
         }
     }
         
@@ -108,8 +124,15 @@ class Field {
         }
     }
     
-    func performConnect(connect: Connect, movedComp: Computer? = nil) {
+    func performConnect(
+        connect: Connect, movedComp: Computer? = nil,
+        isTemporary: Bool = false
+    ) {
         let comp1 = connect.comp1, comp2 = connect.comp2
+        // just in case, perform both...
+        clusters[uf.root(of: comp1.id)].merge(clusters[uf.root(of: comp2.id)])
+        clusters[uf.root(of: comp2.id)].merge(clusters[uf.root(of: comp1.id)])
+        uf.merge(comp1.id, comp2.id)
 //        IO.log("connect:", comp1.pos, comp2.pos, type: .debug)
                 
         guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
@@ -211,27 +234,11 @@ class Field {
 
 extension Field {
     func getCluster(ofComputer comp: Computer) -> Cluster {
-        var comps = Set<Computer>()
-        comps.insert(comp)
-        
-        var q = Queue<Computer>()
-        q.push(comp)
-        
-        while let comp = q.pop() {
-            for connectedComp in comp.connected {
-                guard !comps.contains(connectedComp) else { continue }
-                q.push(connectedComp)
-                comps.insert(connectedComp)
-            }
-        }
-        
-        let cluster = Cluster(comps: comps, types: computerTypes)
-        return cluster
+        clusters[uf.root(of: comp.id)]
     }
     
     func isInSameCluster(comp1: Computer, comp2: Computer) -> Bool {
-        let cluster = getCluster(ofComputer: comp1)
-        return cluster.comps.contains(comp2)
+        uf.same(comp1.id, comp2.id)
     }
     
     func findNearestEmptyCell(at: Pos, trialLimit: Int = 50, ignorePos: [Pos] = []) -> Pos? {

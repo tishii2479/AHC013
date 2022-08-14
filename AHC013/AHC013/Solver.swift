@@ -77,7 +77,7 @@ final class SolverV1: Solver {
             let cluster1 = field.getCluster(ofComputer: comp1)
             let cluster2 = field.getCluster(ofComputer: comp2)
             let currentScore = cluster1.calcScore() + cluster2.calcScore()
-            var newCluster = cluster1.merge(cluster2)
+            var newCluster = cluster1.merged(cluster2)
             var bestConnects: [Connect]? = nil
             var bestPrepareMoves = [Move]()
             var bestImprovedScore = 0
@@ -301,7 +301,7 @@ final class SolverV1: Solver {
                         let moves = moves1 + moveToInter + moves2
 
                         let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
-                        let newCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
+                        let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
                         let didImproveScore = newCluster.calcScore() > currentScore
                         if didImprovedMoves && didImproveScore {
                             selectedMoves = moves
@@ -318,7 +318,7 @@ final class SolverV1: Solver {
             if checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
                let moves = movesToClear(from: comp1.pos, to: comp2.pos,
                                         ignorePos: ignorePos, fixedComp: [comp1, comp2]) {
-                let newCluster = field.getCluster(ofComputer: comp1).merge(field.getCluster(ofComputer: comp2))
+                let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
                 let didImproveScore = newCluster.calcScore() > currentScore
                 if didImproveScore {
                     selectedMoves = moves

@@ -110,7 +110,13 @@ struct Cluster {
         return score
     }
     
-    func merge(_ other: Cluster) -> Cluster {
+    mutating func merge(_ other: Cluster) {
+        for comp in other.comps {
+            add(comp: comp)
+        }
+    }
+    
+    func merged(_ other: Cluster) -> Cluster {
         var ret = self
         for comp in other.comps {
             ret.add(comp: comp)
