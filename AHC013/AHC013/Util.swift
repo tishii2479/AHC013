@@ -123,4 +123,10 @@ class Util {
         }
         return dirs
     }
+    
+    static let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+        let dy = abs(b.y - a.y)
+        let dx = abs(b.x - a.x)
+        return dy + dx
+    }
 }

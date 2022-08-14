@@ -91,6 +91,7 @@ class Field {
                 comp1: comp, comp2: connectedComp
             )
         }
+        // ISSUE: take away cables?
 //        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
         moveComputer(comp: comp, to: comp.pos + move.dir)
     }

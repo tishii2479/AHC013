@@ -1,13 +1,20 @@
 import Foundation
 
-let startDate = Date()
+enum Time {
+    private static var startDate = Date()
+    static var timeLimit: Double = 2.7
+    
+    static func start() {
+        startDate = Date()
+    }
 
-func elapsedTime() -> Double {
-    Date().timeIntervalSince(startDate)
-}
+    static func elapsedTime() -> Double {
+        Date().timeIntervalSince(startDate)
+    }
 
-func isInTime() -> Bool {
-    elapsedTime() < 2.7
+    static func isInTime() -> Bool {
+        Time.elapsedTime() < timeLimit
+    }
 }
 
 class Computer {

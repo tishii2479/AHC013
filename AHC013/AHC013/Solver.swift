@@ -22,118 +22,39 @@ final class SolverV1: Solver {
         self.performedMoves = performedMoves
         self.connects = connects
     }
-    
-    func otherTypes() -> [Int] {
-        var ret = [Int]()
-        for i in 1 ... field.computerTypes {
-            if i != mainType {
-                ret.append(i)
-            }
-        }
-        return ret
-    }
-    
-    func copy() -> SolverV1 {
-        SolverV1(
-            field: field.copy(),
-            performedMoves: performedMoves,
-            connects: connects
-        )
-    }
 
     func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
         mainType = type
-        IO.log("constructFirstCluster:1", elapsedTime())
+        IO.log("constructFirstCluster:1", Time.elapsedTime(), type: .log)
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
-        IO.log("constructFirstCluster:2", elapsedTime())
+        IO.log("constructFirstCluster:2", Time.elapsedTime(), type: .log)
         connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
-        IO.log("constructFirstCluster:3", elapsedTime())
+        IO.log("constructFirstCluster:3", Time.elapsedTime(), type: .log)
         connectOneClusterWithOtherComputer(type: type)
-        IO.log("constructFirstCluster:4", elapsedTime())
+        IO.log("constructFirstCluster:4", Time.elapsedTime(), type: .log)
         return (field.calcScore(), currentCommands)
     }
     
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
-        IO.log("constructSecondCluster:1", elapsedTime())
         connectOneClusterBfs(
-            types: otherTypes(),
+            types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
             distLimit: 20,
             costLimit: param.costLimit
         )
-        IO.log("constructSecondCluster:2", elapsedTime())
         return (field.calcScore(), currentCommands)
     }
     
     func constructOtherClusters(param: Parameter) -> (Int, Int) {
         var costLimit = param.costLimit
-        while currentCommands < field.computerTypes * 100 && isInTime() {
+        while Time.isInTime() {
             connectOneClusterBfs(
-                types: otherTypes(),
+                types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
                 distLimit: 10,
                 costLimit: costLimit
             )
             costLimit += 1
         }
         return (field.calcScore(), currentCommands)
-    }
-    
-    func optimizeConnection(type: Int, considerComp: Int = 30) {
-        let center = Pos(x: field.size / 2, y: field.size / 2)
-        let compNearToCenter = field.computerGroup[type].sorted(by: { (a, b) in
-            a.pos.dist(to: center) < b.pos.dist(to: center)
-        })
-        let distF = { (a: Pos, b: Pos) -> Int in
-            if Util.isAligned(a, b) {
-                return -(a.dist(to: center) + b.dist(to: center))
-            }
-            return 0
-        }
-        let edgeCompPairs = getSortedCompPair(
-            type: type, distLimit: -field.size,
-            distF: distF
-        )
-        
-        for comp in compNearToCenter.prefix(considerComp) {
-            guard comp.pos.dist(to: center) <= field.size / 2 else {
-                return
-            }
-            for connectedComp in comp.connected {
-                guard isInTime() else { return }
-                guard comp.pos.dist(to: connectedComp.pos) > 1 else {
-                    continue
-                }
-
-                let connect = Connect(comp1: comp, comp2: connectedComp)
-                resetConnect(connect: connect)
-                
-                let cluster1 = field.getCluster(ofComputer: comp)
-                let cluster2 = field.getCluster(ofComputer: connectedComp)
-                var reconnected = false
-                
-                if cluster1.comps.count > 1 && cluster2.comps.count > 1 {
-                    for (dist, (comp1, comp2)) in edgeCompPairs {
-                        if comp1.connected.contains(comp2) {
-                            continue
-                        }
-                        let isInDifferentCluster = cluster1.comps.contains(comp1)
-                                                    != cluster1.comps.contains(comp2)
-                        if isInDifferentCluster && connectCompIfPossible(
-                            comp1: comp1, comp2: comp2, dist: dist,
-                            distLimit: 100, costLimit: 100
-                        ) {
-//                            IO.log("disconnect: \(comp.pos), \(connectedComp.pos), connect: \(comp1.pos), \(comp2.pos), \(cluster1.comps.count), \(cluster2.comps.count)")
-                            reconnected = true
-                            break
-                        }
-                    }
-                }
-                
-                if !reconnected {
-                    // reset
-                    performConnect(connect: connect)
-                }
-            }
-        }
     }
     
     func connectOneClusterWithOtherComputer(
@@ -148,7 +69,7 @@ final class SolverV1: Solver {
 
         let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         for (dist, (comp1, comp2)) in compPair {
-            guard isInTime() else { return }
+            guard Time.isInTime() else { return }
             guard currentCommands + dist <= field.computerTypes * 100 else {
                 return
             }
@@ -166,6 +87,7 @@ final class SolverV1: Solver {
             
             for pos1 in field.movable(comp: comp1, moveLimit: 3) {
                 for pos2 in field.movable(comp: comp2, moveLimit: 3) {
+                    guard Time.isInTime() else { return }
                     guard pos1 != pos2 else { continue }
                     var cPos = pos1
                     var cComp = comp1
@@ -174,6 +96,7 @@ final class SolverV1: Solver {
                     var connectedComps = [Computer]()
                         
                     // TODO: find optimal
+                    // FIXME: make it possible to connect between empty cells
                     
                     for dir in Util.dirsForPath(from: pos1, to: pos2) {
                         let nextPos = cPos + dir
@@ -211,18 +134,21 @@ final class SolverV1: Solver {
     }
     
     func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
+        guard Time.isInTime() else { return }
         let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
             let dy = abs(b.y - a.y)
             let dx = abs(b.x - a.x)
             return dy + dx
         }
-
-        let nearComputers = getNearCompPair(types: types, distF: distF)
+        
+        // TODO: cache?
+        let nearComputers = getNearCompPair(types: types, distF: distF, distLimit: distLimit)
         var largestClusterSize = 0
         var largestStartComp: Computer? = nil
         
+//        IO.log("connectOneClusterBfs:searchStartComp:start", Time.elapsedTime())
         for _ in 0 ..< trialLimit {
-            guard isInTime() else { return }
+            guard Time.isInTime() else { return }
             guard let type = types.randomElement(),
                   let startComp: Computer = field.computerGroup[type].randomElement(),
                   !startComp.isConnected else {
@@ -234,6 +160,7 @@ final class SolverV1: Solver {
                 largestStartComp = startComp
             }
         }
+//        IO.log("connectOneClusterBfs:searchStartComp:end", Time.elapsedTime())
         
         guard let startComp = largestStartComp else {
             return
@@ -244,11 +171,12 @@ final class SolverV1: Solver {
         var q = Queue<Computer>()
         q.push(startComp)
         while let comp = q.pop() {
-            guard isInTime() else { return }
+            guard Time.isInTime() else { return }
             guard let nearComps = nearComputers[comp] else {
                 continue
             }
             for (dist, nearComp) in nearComps {
+                guard Time.isInTime() else { return }
                 let connected = connectCompIfPossible(
                     comp1: comp, comp2: nearComp,
                     dist: dist, distLimit: distLimit, costLimit: costLimit
@@ -260,9 +188,13 @@ final class SolverV1: Solver {
         }
     }
     
+    // TODO: change process
+    // ISSUE: slow
     func getNearCompPair(
-        types: [Int], distF: (Pos, Pos) -> Int
+        types: [Int], distF: (Pos, Pos) -> Int,
+        distLimit: Int
     ) -> [Computer: [(Int, Computer)]] {
+        IO.log("getNearCompPair:start", Time.elapsedTime())
         var ret = [Computer: [(Int, Computer)]]()
         for type in types {
             for comp in field.computerGroup[type] {
@@ -274,6 +206,32 @@ final class SolverV1: Solver {
                 ret[comp] = nearComp
             }
         }
+        IO.log("getNearCompPair:end", Time.elapsedTime())
+        return ret
+    }
+    
+    // ISSUE: slow
+    // TODO: change process
+    // Not used
+    func getNearCompPair2(
+        types: [Int], distF: (Pos, Pos) -> Int,
+        distLimit: Int
+    ) -> [Computer: [(Int, Computer)]] {
+        IO.log("getNearCompPair:start", Time.elapsedTime())
+        var ret = [Computer: [(Int, Computer)]]()
+        for type in types {
+            for (dist, (comp1, comp2)) in getSortedCompPair(type: type, distLimit: distLimit, distF: distF) {
+                if ret[comp1] == nil {
+                    ret[comp1] = []
+                }
+                if ret[comp2] == nil {
+                    ret[comp2] = []
+                }
+                ret[comp1]?.append((dist, comp2))
+                ret[comp2]?.append((dist, comp1))
+            }
+        }
+        IO.log("getNearCompPair:end", Time.elapsedTime())
         return ret
     }
     
@@ -286,7 +244,7 @@ final class SolverV1: Solver {
         let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         
         for (dist, (comp1, comp2)) in compPair {
-            guard isInTime() else { return }
+            guard Time.isInTime() else { return }
             let _ = connectCompIfPossible(
                 comp1: comp1, comp2: comp2,
                 dist: dist, distLimit: distLimit, costLimit: costLimit
@@ -403,7 +361,6 @@ final class SolverV1: Solver {
                 }
             }
         }
-        
         return compPair.sorted(by: { (a, b) in
             return a.0 < b.0
         })
@@ -414,13 +371,12 @@ final class SolverV1: Solver {
             return false
         }
         let direction = Util.fromDir(dir: dir)
-        let val = !field.hasConflictedCable(
+        return !field.hasConflictedCable(
             from: from,
             to: to,
             allowedCompType: compType,
             allowedDirection: direction
         )
-        return val
     }
     
     func moveToInter(from: Pos, inter: Pos) -> [Move]? {
@@ -524,5 +480,13 @@ final class SolverV1: Solver {
     private func resetConnect(connect: Connect) {
         connects.remove(connect)
         field.resetConnect(connect: connect)
+    }
+    
+    func copy() -> SolverV1 {
+        SolverV1(
+            field: field.copy(),
+            performedMoves: performedMoves,
+            connects: connects
+        )
     }
 }
