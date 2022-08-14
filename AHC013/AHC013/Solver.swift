@@ -61,7 +61,8 @@ final class SolverV1: Solver {
     
     func connectOneClusterWithOtherComputer(
         type: Int, otherCompLimit: Int = 1,
-        distLimit: Int = 4, costLimit: Int = 10
+        distLimit: Int = 4, costLimit: Int = 10,
+        trialLimit: Int = 10
     ) {
         let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: Util.distF)
         for (dist, (comp1, comp2)) in compPair {
@@ -77,51 +78,66 @@ final class SolverV1: Solver {
             let cluster2 = field.getCluster(ofComputer: comp2)
             let currentScore = cluster1.calcScore() + cluster2.calcScore()
             var newCluster = cluster1.merge(cluster2)
-            var bestConnects = [Connect]()
-            var bestMoves = [Move]()
+            var bestConnects: [Connect]? = nil
+            var bestPrepareMoves = [Move]()
             var bestImprovedScore = 0
             
             for pos1 in field.movable(comp: comp1, moveLimit: 3) {
                 for pos2 in field.movable(comp: comp2, moveLimit: 3) {
                     guard Time.isInTime() else { return }
                     guard pos1 != pos2 else { continue }
-                    var cPos = pos1
-                    var cComp = comp1
-                    var ok = true
-                    var tempConnects = [Connect]()
-                    var connectedComps = [Computer]()
+                    
+                    var dirs = Util.dirsForPath(from: pos1, to: pos2)
+                    
+                    for _ in 0 ..< trialLimit {
+                        dirs.shuffle()
+                        var cPos = pos1
+                        var cComp = comp1
+                        var ok = true
+                        var tempConnects = [Connect]()
+                        var connectedComps = [Computer]()
+                            
+                        // FIXME: make it possible to connect between empty cells
                         
-                    // TODO: find optimal
-                    // FIXME: make it possible to connect between empty cells
-                    
-                    for dir in Util.dirsForPath(from: pos1, to: pos2) {
-                        let nextPos = cPos + dir
-                        guard nextPos != comp1.pos,
-                              let comp = field.cell(pos: nextPos).computer else {
-                            ok = false
-                            break
+                        for i in 0 ..< dirs.count {
+                            let nextPos = cPos + dirs[i]
+                            //
+                            let isCorner = i + 1 < dirs.count && dirs[i] != dirs[i + 1]
+                            guard nextPos != comp1.pos else {
+                                ok = false
+                                break
+                            }
+                            if let comp = field.cell(pos: nextPos).computer {
+                                connectedComps.append(comp)
+                                tempConnects.append(Connect(comp1: cComp, comp2: comp))
+                                cComp = comp
+                            }
+                            else if field.cell(pos: nextPos).isCabled || isCorner {
+                                ok = false
+                                break
+                            }
+                            cPos += dirs[i]
                         }
-                        connectedComps.append(comp)
-                        tempConnects.append(Connect(comp1: cComp, comp2: comp))
-                        cComp = comp
-                        cPos += dir
-                    }
-                    guard ok else { continue }
-                    
-                    let newComputerTypes = connectedComps.filter{ $0.type != comp1.type }.map{ $0.type }
-                    let improvedScore = newCluster.getScore(addTypes: newComputerTypes) - currentScore
-                    if let moves1 = Util.getMoves(from: comp1.pos, to: pos1),
-                       let moves2 = Util.getMoves(from: comp2.pos, to: pos2),
-                       improvedScore > bestImprovedScore && currentCommands + moves1.count + moves2.count + tempConnects.count <= field.computerTypes * 100 {
-                        bestImprovedScore = improvedScore
-                        bestConnects = tempConnects
-                        bestMoves = moves1 + moves2
+                        guard ok else { continue }
+                        
+                        let newComputerTypes = connectedComps.filter{ $0.type != comp1.type }.map{ $0.type }
+                        let improvedScore = newCluster.getScore(addTypes: newComputerTypes) - currentScore
+                        if let moves1 = Util.getMoves(from: comp1.pos, to: pos1),
+                           let moves2 = Util.getMoves(from: comp2.pos, to: pos2),
+                           improvedScore > bestImprovedScore,
+                           bestConnects == nil || tempConnects.count < bestConnects!.count,
+                           currentCommands + moves1.count + moves2.count + tempConnects.count <= field.computerTypes * 100 {
+                            bestImprovedScore = improvedScore
+                            bestConnects = tempConnects
+                            bestPrepareMoves = moves1 + moves2
+                        }
                     }
                 }
             }
             
-            if bestImprovedScore > 0 {
-                performMoves(moves: bestMoves)
+            if bestImprovedScore > 0,
+               let bestConnects = bestConnects {
+                performMoves(moves: bestPrepareMoves)
                 for connect in bestConnects {
                     performConnect(connect: connect)
                 }
