@@ -61,6 +61,8 @@ func main() {
         let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
         IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         
+        let _ = solver.constructSecondCluster(param: param)
+        let _ = solver.constructSecondCluster(param: param)
         let (score2, cost2) = solver.constructSecondCluster(param: param)
         solvers.append((score2, cost2, solver))
         IO.log("b:", score2, cost2, Time.elapsedTime(), type: .log)
