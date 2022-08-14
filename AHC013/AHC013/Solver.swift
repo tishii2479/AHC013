@@ -179,8 +179,9 @@ final class SolverV1: Solver {
             guard let nearComps = nearComputers[comp] else {
                 continue
             }
-            for (dist, nearComp) in nearComps {
+            for (_, nearComp) in nearComps {
                 guard Time.isInTime() else { return }
+                let dist = Util.distF(comp.pos, nearComp.pos)
                 let connected = connectCompIfPossible(
                     comp1: comp, comp2: nearComp,
                     dist: dist, distLimit: distLimit, costLimit: costLimit
@@ -244,8 +245,10 @@ final class SolverV1: Solver {
     }
     
     func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
-        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: Util.distF)
-        
+        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+            Util.distF(a, b) + Int.random(in: -1 ... 1)
+        }
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         for (dist, (comp1, comp2)) in compPair {
             guard Time.isInTime() else { return }
             let _ = connectCompIfPossible(

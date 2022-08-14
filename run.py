@@ -17,7 +17,8 @@ def test_run(
     results: List[Tuple[Tuple[int, int], float]] = []
 
     for i in range(cases):
-        print(exe_file + ": " + str(i), file=sys.stderr)
+        if verbose:
+            print(exe_file + ": " + str(i), file=sys.stderr)
         sum = 0
         in_file = "in/" + str(i).zfill(4) + ".txt"
         out_file = "out/" + str(i).zfill(4) + ".txt"
@@ -59,10 +60,11 @@ def test_run(
 
         max_score_sum += max_score
         if verbose or i % (cases // 10) == 0:
-            print("Average score for", in_file, sum / run)
-            print("    Max score for", in_file, max_score)
             print("          Average for", total_sum / (i + 1) / run)
-            print("Max score average for", in_file, max_score_sum / (i + 1))
+            if verbose:
+                print("Average score for", in_file, sum / run)
+                print("    Max score for", in_file, max_score)
+                print("Max score average for", in_file, max_score_sum / (i + 1))
             results.append(((n, k), sum / run))
     print("[RESULT] Average is", total_sum / cases / run, ":", exe_file)
     print("[RESULT] Max score average is", max_score_sum / cases, ":", exe_file)
