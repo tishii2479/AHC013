@@ -179,7 +179,8 @@ final class SolverV1: Solver {
                 guard Time.isInTime() else { return }
                 let connected = connectCompIfPossible(
                     comp1: comp, comp2: nearComp,
-                    dist: dist, distLimit: distLimit, costLimit: costLimit
+                    dist: dist, distLimit: distLimit, costLimit: costLimit,
+                    reconnectIfPossible: true
                 )
                 if connected {
                     q.push(nearComp)
@@ -200,7 +201,7 @@ final class SolverV1: Solver {
             for comp in field.computerGroup[type] {
                 let nearComp = field.getNearComputers(
                     aroundComp: comp,
-                    loopLimit: field.size * field.size,
+                    loopLimit: 100,
                     distF: distF
                 )
                 ret[comp] = nearComp
@@ -255,7 +256,9 @@ final class SolverV1: Solver {
     // Returns true if connected
     private func connectCompIfPossible(
         comp1: Computer, comp2: Computer,
-        dist: Int, distLimit: Int, costLimit: Int
+        dist: Int, distLimit: Int, costLimit: Int,
+        reconnectIfPossible: Bool = false,
+        blockedPos: [Pos] = []
     ) -> Bool {
         guard dist <= distLimit else {
             return false
@@ -265,6 +268,8 @@ final class SolverV1: Solver {
         }
         var selectedMoves: [Move]? = nil
         var selectedMoveComp: Computer? = nil
+
+        var reconnectConnects: (Connect, Connect)? = nil
         
         let currentScore = field.getCluster(ofComputer: comp1).calcScore()
             + field.getCluster(ofComputer: comp2).calcScore()
@@ -273,7 +278,7 @@ final class SolverV1: Solver {
             for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
                 for inter in intersections {
                     let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
-                        Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
+                        Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos] + blockedPos
                     if let dir = Util.toDir(from: fromComp.pos, to: inter) {
                         // check cable does not get cut
                         if !fromComp.isMovable(dir: dir) {
@@ -284,6 +289,11 @@ final class SolverV1: Solver {
                            !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
                             continue
                         }
+                    }
+                    if reconnectIfPossible,
+                       !checkConnectable(from: inter, to: toComp.pos, compType: toComp.type) {
+                        reconnectConnects = reconnectClusterIfPossible(
+                            from: inter, to: toComp.pos, compType: toComp.type)
                     }
                     if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
                        let moves1 = movesToClear(
@@ -312,7 +322,13 @@ final class SolverV1: Solver {
         }
         else {
             // is already aligned
-            let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: comp2.pos) + [comp2.pos]
+            let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: comp2.pos)
+                                + [comp2.pos] + blockedPos
+            if reconnectIfPossible,
+               !checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type) {
+                reconnectConnects = reconnectClusterIfPossible(
+                    from: comp1.pos, to: comp2.pos, compType: comp2.type)
+            }
             if checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
                let moves = movesToClear(from: comp1.pos, to: comp2.pos,
                                         ignorePos: ignorePos, fixedComp: [comp1, comp2]) {
@@ -347,6 +363,90 @@ final class SolverV1: Solver {
            }
         }
         return false
+    }
+
+    private func reconnectClusterIfPossible(from: Pos, to: Pos, compType: Int) -> (Connect, Connect)? {
+        // check cables between from and pos
+        var existingCable: Cable? = nil
+        for pos in Util.getBetweenPos(from: from, to: to) {
+            if let cable = field.cell(pos: pos).cable,
+               cable.compType != compType {
+                // only reconnect one cable
+                // interrupt if there are two cables
+                if existingCable != nil {
+                    return nil
+                }
+                existingCable = cable
+            }
+        }
+        
+        guard let existingCable = existingCable else {
+//            IO.log("I think there should be a cable between \(from) and \(to)", type: .warn)
+            return nil
+        }
+        
+        return findReconnection(
+            comp1: existingCable.comp1, comp2: existingCable.comp2,
+            ignorePos: Util.getBetweenPos(from: from, to: to)
+        )
+    }
+    
+    private func findReconnection(
+        comp1: Computer, comp2: Computer,
+        ignorePos: [Pos]
+    ) -> (Connect, Connect)? {
+        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+            let dy = abs(b.y - a.y)
+            let dx = abs(b.x - a.x)
+            return dy + dx
+        }
+        
+        var reconnected = false
+        // reset connect temporary
+        let connect = Connect(comp1: comp1, comp2: comp2)
+        resetConnect(connect: connect)
+        defer {
+            if !reconnected {
+                // reset
+                performConnect(connect: connect)
+            }
+        }
+        
+        let cluster1 = field.getCluster(ofComputer: comp1)
+        let cluster2 = field.getCluster(ofComputer: comp2)
+
+        for compInCluster1 in cluster1.comps {
+            for compInCluster2 in cluster2.comps {
+                guard !(comp1 == compInCluster1 && comp2 == compInCluster2) else {
+                    continue
+                }
+                guard Util.isAligned(compInCluster1.pos, compInCluster2.pos) else {
+                    continue
+                }
+                var doesIntersect: Bool = false
+                let dist = distF(compInCluster1.pos, compInCluster2.pos)
+                // check if the new cable is not on ignorePos
+                for pos in Util.getBetweenPos(from: compInCluster1.pos, to: compInCluster2.pos) {
+                    if ignorePos.contains(pos) || field.cell(pos: pos).isComputer {
+                        doesIntersect = true
+                        break
+                    }
+                }
+                guard !doesIntersect else {
+                    continue
+                }
+                if connectCompIfPossible(
+                    comp1: compInCluster1, comp2: compInCluster2, dist: dist,
+                    distLimit: 100, costLimit: 100, blockedPos: ignorePos
+                ) {
+                    IO.log("reconnected: (\(comp1.pos), \(comp2.pos)) -> (\(compInCluster1.pos), \(compInCluster2.pos))")
+                    reconnected = true
+                    return (Connect(comp1: comp1, comp2: comp2),
+                            Connect(comp1: compInCluster1, comp2: compInCluster2))
+                }
+            }
+        }
+        return nil
     }
     
     private func getSortedCompPair(type: Int, distLimit: Int, distF: (Pos, Pos) -> Int) -> [(Int, (Computer, Computer))] {
