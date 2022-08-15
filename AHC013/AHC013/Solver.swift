@@ -246,7 +246,7 @@ extension SolverV1 {
                 reverseTemporaryMoves(moves: temporaryMoves)
                 performConnect(connect: testCutConnect)
             }
-
+            
             let ignorePosToClear = [compInCluster.pos] + Util.getBetweenPos(from: compInCluster.pos, to: inter) + [inter] +
                 Util.getBetweenPos(from: inter, to: compToConnect.pos) + [compToConnect.pos]
                 + [cable.comp1.pos + cable.comp2.pos]
@@ -256,7 +256,7 @@ extension SolverV1 {
                 addEnd: true)
             temporaryMoves.append(contentsOf: moves1)
             guard isCompleted1 else { continue }
-            
+
             let (isCompleted2, moves2) = moveToPos(from: compToConnect.pos, pos: inter)
             temporaryMoves.append(contentsOf: moves2)
             guard isCompleted2 else { continue }

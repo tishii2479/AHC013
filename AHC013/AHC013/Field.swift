@@ -89,7 +89,10 @@ class Field {
     
     func reverseMoves(moves: [Move]) {
         for move in moves.reversed() {
-            performMove(move: Move(pos: move.pos + move.dir, dir: move.dir.rev))
+            performMove(
+                move: Move(pos: move.pos + move.dir, dir: move.dir.rev),
+                isTemporary: true
+            )
         }
     }
     
