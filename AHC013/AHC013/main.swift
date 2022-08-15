@@ -64,8 +64,8 @@ func main() {
         IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         
         output(solver: solver, commandLimit: computerTypes * 100)
-//        let _ = solver.constructSecondCluster(param: param)
-//        let _ = solver.constructSecondCluster(param: param)
+        let _ = solver.constructSecondCluster(param: param)
+        let _ = solver.constructSecondCluster(param: param)
         let (score2, cost2) = solver.constructSecondCluster(param: param)
         solvers.append((score2, cost2, solver))
         IO.log("b:", score2, cost2, Time.elapsedTime(), type: .log)
@@ -92,7 +92,7 @@ func main() {
     
     Time.timeLimit = 2.8
 
-//    let _ = bestSolver.constructOtherClusters(param: param)
+    let _ = bestSolver.constructOtherClusters(param: param)
     
     output(solver: bestSolver, commandLimit: computerTypes * 100)
     

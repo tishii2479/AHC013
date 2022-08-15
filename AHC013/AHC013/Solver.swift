@@ -9,6 +9,7 @@ final class SolverV1: Solver {
     private var mainType: Int = 0
     
     private var nearComputers: [Computer: [(Int, Computer)]] = [:]
+    private var reconnectablePairs: [(Computer, Computer)] = []
     
     private var currentCommands: Int {
         performedMoves.count + connects.count
@@ -44,7 +45,7 @@ final class SolverV1: Solver {
                 }
                 if let _ = getMovesToConnectComp(
                     comp1: comp1, comp2: comp2, checkImproveScore: false) as? ([Move], Computer?) {
-                    IO.log("Found moves to connect: \(comp1.pos), \(comp2.pos)")
+                    reconnectablePairs.append((comp1, comp2))
                 }
             }
         }
@@ -56,7 +57,8 @@ final class SolverV1: Solver {
         connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
             distLimit: 20,
-            costLimit: param.costLimit
+            costLimit: param.costLimit,
+            extend: true
         )
         return (field.calcScore(), currentCommands)
     }
@@ -90,7 +92,11 @@ extension SolverV1 {
         }
     }
     
-    func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
+    func connectOneClusterBfs(
+        types: [Int], distLimit: Int = 100,
+        costLimit: Int = 100, trialLimit: Int = 30,
+        extend: Bool = false
+    ) {
         guard Time.isInTime() else { return }
         var largestClusterSize = 0
         var largestStartComp: Computer? = nil
@@ -127,14 +133,16 @@ extension SolverV1 {
             for (_, nearComp) in nearComps {
                 guard Time.isInTime() else { return }
                 let dist = Util.distF(comp.pos, nearComp.pos)
-                let connected = connectCompIfPossible(
+                var connected = connectCompIfPossible(
                     comp1: comp, comp2: nearComp,
                     dist: dist, distLimit: distLimit, costLimit: costLimit
                 )
-                || extendClusterByReconnecting(
-                    compInCluster: comp, compToConnect: nearComp,
-                    costLimit: costLimit
-                )
+                if !connected && extend {
+                    connected = extendClusterByReconnecting(
+                        compInCluster: comp, compToConnect: nearComp,
+                        costLimit: costLimit
+                    )
+                }
                 // extend bfs
                 if connected {
                     q.push(nearComp)
@@ -265,6 +273,22 @@ extension SolverV1 {
                     performConnect(connect: testCutConnect)
                 }
             }
+
+            if let dir = Util.toDir(from: compToConnect.pos, to: inter) {
+                // check cable does not get cut
+                if !compToConnect.isMovable(dir: dir) {
+                    continue
+                }
+                // check extend cables
+                if compToConnect.connectedComp(to: dir.rev) != nil,
+                   !checkConnectable(from: compToConnect.pos, to: inter, compType: compToConnect.type) {
+                    continue
+                }
+            }
+            guard checkConnectable(
+                from: inter, to: compInCluster.pos, compType: compInCluster.type) else {
+                continue
+            }
             
             let ignorePosToClear = [compInCluster.pos] + Util.getBetweenPos(from: compInCluster.pos, to: inter) + [inter] +
                 Util.getBetweenPos(from: inter, to: compToConnect.pos) + [compToConnect.pos]
@@ -311,8 +335,8 @@ extension SolverV1 {
             temporaryMoves.append(contentsOf: movesToExtend)
             performTemporaryMoves(moves: movesToExtend)
             
-            IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
-            IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
+//            IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
+//            IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
 
             reverseTemporaryMoves(moves: temporaryMoves)
             temporaryMoves.removeAll()
@@ -737,6 +761,9 @@ extension SolverV1 {
     }
     
     private func performConnect(connect: Connect, movedComp: Computer? = nil) {
+        guard Util.isAligned(connect.comp1.pos, connect.comp2.pos) else {
+            fatalError()
+        }
         if let movedComp = movedComp,
            let cable = field.cell(pos: movedComp.pos).cable,
            cable.compType == movedComp.type {
@@ -752,6 +779,9 @@ extension SolverV1 {
     }
     
     private func resetConnect(connect: Connect) {
+        guard Util.isAligned(connect.comp1.pos, connect.comp2.pos) else {
+            fatalError()
+        }
         connects.remove(connect)
         field.resetConnect(connect: connect)
     }
