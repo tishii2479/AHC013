@@ -58,6 +58,70 @@ final class SolverV1: Solver {
         }
         return (field.calcScore(), currentCommands)
     }
+}
+
+extension SolverV1 {
+    func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
+        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
+            Util.distF(a, b) + Int.random(in: -1 ... 1)
+        }
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
+        for (dist, (comp1, comp2)) in compPair {
+            guard Time.isInTime() else { return }
+            let _ = connectCompIfPossible(
+                comp1: comp1, comp2: comp2,
+                dist: dist, distLimit: distLimit, costLimit: costLimit
+            )
+        }
+    }
+    
+    func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
+        guard Time.isInTime() else { return }
+        var largestClusterSize = 0
+        var largestStartComp: Computer? = nil
+        
+//        IO.log("connectOneClusterBfs:searchStartComp:start", Time.elapsedTime())
+        for _ in 0 ..< trialLimit {
+            guard Time.isInTime() else { return }
+            guard let type = types.randomElement(),
+                  let startComp: Computer = field.computerGroup[type].randomElement(),
+                  !startComp.isConnected else {
+                continue
+            }
+            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: Util.distF)
+            if reachableComps.count > largestClusterSize {
+                largestClusterSize = reachableComps.count
+                largestStartComp = startComp
+            }
+        }
+//        IO.log("connectOneClusterBfs:searchStartComp:end", Time.elapsedTime())
+        
+        guard let startComp = largestStartComp else {
+            return
+        }
+        
+//        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
+        
+        var q = Queue<Computer>()
+        q.push(startComp)
+        while let comp = q.pop() {
+            guard Time.isInTime() else { return }
+            guard let nearComps = nearComputers[comp] else {
+                continue
+            }
+            for (_, nearComp) in nearComps {
+                guard Time.isInTime() else { return }
+                let dist = Util.distF(comp.pos, nearComp.pos)
+                let connected = connectCompIfPossible(
+                    comp1: comp, comp2: nearComp,
+                    dist: dist, distLimit: distLimit, costLimit: costLimit
+                )
+                if connected {
+                    q.push(nearComp)
+                }
+            }
+        }
+    }
     
     func connectOneClusterWithOtherComputer(
         type: Int, otherCompLimit: Int = 1,
@@ -144,120 +208,9 @@ final class SolverV1: Solver {
             }
         }
     }
-    
-    func connectOneClusterBfs(types: [Int], distLimit: Int = 100, costLimit: Int = 100, trialLimit: Int = 30) {
-        guard Time.isInTime() else { return }
-        var largestClusterSize = 0
-        var largestStartComp: Computer? = nil
-        
-//        IO.log("connectOneClusterBfs:searchStartComp:start", Time.elapsedTime())
-        for _ in 0 ..< trialLimit {
-            guard Time.isInTime() else { return }
-            guard let type = types.randomElement(),
-                  let startComp: Computer = field.computerGroup[type].randomElement(),
-                  !startComp.isConnected else {
-                continue
-            }
-            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: Util.distF)
-            if reachableComps.count > largestClusterSize {
-                largestClusterSize = reachableComps.count
-                largestStartComp = startComp
-            }
-        }
-//        IO.log("connectOneClusterBfs:searchStartComp:end", Time.elapsedTime())
-        
-        guard let startComp = largestStartComp else {
-            return
-        }
-        
-//        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
-        
-        var q = Queue<Computer>()
-        q.push(startComp)
-        while let comp = q.pop() {
-            guard Time.isInTime() else { return }
-            guard let nearComps = nearComputers[comp] else {
-                continue
-            }
-            for (_, nearComp) in nearComps {
-                guard Time.isInTime() else { return }
-                let dist = Util.distF(comp.pos, nearComp.pos)
-                let connected = connectCompIfPossible(
-                    comp1: comp, comp2: nearComp,
-                    dist: dist, distLimit: distLimit, costLimit: costLimit
-                )
-                if connected {
-                    q.push(nearComp)
-                }
-            }
-        }
-    }
-    
-    // TODO: change process
-    // ISSUE: slow
-    func getNearCompPair(
-        types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int, maxSize: Int = 10
-    ) -> [Computer: [(Int, Computer)]] {
-        IO.log("getNearCompPair:start", Time.elapsedTime())
-        var ret = [Computer: [(Int, Computer)]]()
-        for type in types {
-            for comp in field.computerGroup[type] {
-                let nearComp = field.getNearComputers(
-                    aroundComp: comp,
-                    loopLimit: distLimit * distLimit,
-                    distLimit: distLimit,
-                    distF: distF,
-                    maxSize: maxSize
-                )
-                ret[comp] = nearComp
-            }
-        }
-        IO.log("getNearCompPair:end", Time.elapsedTime())
-        return ret
-    }
-    
-    // TODO: change process
-    // ISSUE: slow
-    // Not used
-    func getNearCompPair2(
-        types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int
-    ) -> [Computer: [(Int, Computer)]] {
-        IO.log("getNearCompPair:start", Time.elapsedTime())
-        var ret = [Computer: [(Int, Computer)]]()
-        for type in types {
-            for (dist, (comp1, comp2)) in getSortedCompPair(type: type, distLimit: distLimit, distF: distF) {
-                if ret[comp1] == nil {
-                    ret[comp1] = []
-                }
-                if ret[comp2] == nil {
-                    ret[comp2] = []
-                }
-                if dist <= distLimit {
-                    ret[comp1]?.append((dist, comp2))
-                    ret[comp2]?.append((dist, comp1))
-                }
-            }
-        }
-        IO.log("getNearCompPair:end", Time.elapsedTime())
-        return ret
-    }
-    
-    func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
-        let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
-            Util.distF(a, b) + Int.random(in: -1 ... 1)
-        }
-        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
-        for (dist, (comp1, comp2)) in compPair {
-            guard Time.isInTime() else { return }
-            let _ = connectCompIfPossible(
-                comp1: comp1, comp2: comp2,
-                dist: dist, distLimit: distLimit, costLimit: costLimit
-            )
-        }
-    }
-    
+}
+
+extension SolverV1 {
     private func getMovesToConnectComp(
         comp1: Computer, comp2: Computer
     ) -> ([Move]?, Computer?) {
@@ -381,6 +334,57 @@ final class SolverV1: Solver {
         return compPair.sorted(by: { (a, b) in
             return a.0 < b.0
         })
+    }
+    
+    // TODO: change process
+    // ISSUE: slow
+    private func getNearCompPair(
+        types: [Int], distF: (Pos, Pos) -> Int,
+        distLimit: Int, maxSize: Int = 10
+    ) -> [Computer: [(Int, Computer)]] {
+        IO.log("getNearCompPair:start", Time.elapsedTime())
+        var ret = [Computer: [(Int, Computer)]]()
+        for type in types {
+            for comp in field.computerGroup[type] {
+                let nearComp = field.getNearComputers(
+                    aroundComp: comp,
+                    loopLimit: distLimit * distLimit,
+                    distLimit: distLimit,
+                    distF: distF,
+                    maxSize: maxSize
+                )
+                ret[comp] = nearComp
+            }
+        }
+        IO.log("getNearCompPair:end", Time.elapsedTime())
+        return ret
+    }
+    
+    // TODO: change process
+    // ISSUE: slow
+    // Not used
+    private func getNearCompPair2(
+        types: [Int], distF: (Pos, Pos) -> Int,
+        distLimit: Int
+    ) -> [Computer: [(Int, Computer)]] {
+        IO.log("getNearCompPair:start", Time.elapsedTime())
+        var ret = [Computer: [(Int, Computer)]]()
+        for type in types {
+            for (dist, (comp1, comp2)) in getSortedCompPair(type: type, distLimit: distLimit, distF: distF) {
+                if ret[comp1] == nil {
+                    ret[comp1] = []
+                }
+                if ret[comp2] == nil {
+                    ret[comp2] = []
+                }
+                if dist <= distLimit {
+                    ret[comp1]?.append((dist, comp2))
+                    ret[comp2]?.append((dist, comp1))
+                }
+            }
+        }
+        IO.log("getNearCompPair:end", Time.elapsedTime())
+        return ret
     }
     
     private func checkConnectable(from: Pos, to: Pos, compType: Int) -> Bool {
