@@ -110,7 +110,12 @@ class Field {
                 comp1: comp, comp2: connectedComp
             )
         }
-        // ISSUE: take away cables?
+        if !isTemporary,
+           let cable = cell(pos: comp.pos + move.dir).cable,
+           cable.comp1 == comp || cable.comp2 == comp {
+            // reset cable
+            cells[(comp.pos + move.dir).y][(comp.pos + move.dir).x].cable = nil
+        }
 //        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
         moveComputer(comp: comp, to: comp.pos + move.dir)
     }
