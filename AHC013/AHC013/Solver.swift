@@ -286,9 +286,9 @@ extension SolverV1 {
                 continue
             }
             
-            let ignorePosToClear = [compInCluster.pos] + Util.getBetweenPos(from: compInCluster.pos, to: inter) + [inter] +
-                Util.getBetweenPos(from: inter, to: compToConnect.pos) + [compToConnect.pos]
-                + [cable.comp1.pos + cable.comp2.pos]
+            let ignorePosToClear = [compInCluster.pos, inter, compToConnect.pos, cable.comp1.pos, cable.comp2.pos]
+                + Util.getBetweenPos(from: compInCluster.pos, to: inter)
+                + Util.getBetweenPos(from: inter, to: compToConnect.pos)
             let (isCompleted1, moves1) = movesToClear(
                 from: compToConnect.pos, to: inter, ignorePos: ignorePosToClear,
                 fixedComp: [compInCluster, compToConnect, cable.comp1, cable.comp2],
@@ -310,7 +310,8 @@ extension SolverV1 {
             
             let ignorePos = Util.getBetweenPos(from: compInCluster.pos, to: inter)
                             + Util.getBetweenPos(from: reconnectComp1.pos, to: reconnectComp2.pos)
-                            + [compInCluster.pos] + [compToConnect.pos] + [reconnectComp1.pos] + [reconnectComp2.pos]
+                            + [compInCluster.pos, compToConnect.pos,
+                               reconnectComp1.pos,  reconnectComp2.pos]
             let fixedComp = [compInCluster, compToConnect, reconnectComp1, reconnectComp2]
             
             guard let (movesToReconnect, movedCompToReconnect) = getMovesToConnectComp(
@@ -465,8 +466,10 @@ extension SolverV1 {
             for inter in intersections {
                 var temporaryMoves: [Move] = []
                 defer { reverseTemporaryMoves(moves: temporaryMoves) }
-                let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
-                    Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos] + additionalIgnorePos
+                let ignorePos = [comp1.pos, inter, comp2.pos]
+                    + Util.getBetweenPos(from: comp1.pos, to: inter)
+                    + Util.getBetweenPos(from: inter, to: comp2.pos)
+                    + additionalIgnorePos
                 let fixedComp = [fromComp, toComp] + additionalFixedComp
                 if let dir = Util.toDir(from: fromComp.pos, to: inter) {
                     // check cable does not get cut
@@ -530,8 +533,9 @@ extension SolverV1 {
             for inter in intersections {
                 var temporaryMoves: [Move] = []
                 defer { reverseTemporaryMoves(moves: temporaryMoves) }
-                let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
-                    Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
+                let ignorePos = [comp1.pos, inter, comp2.pos]
+                                + Util.getBetweenPos(from: comp1.pos, to: inter)
+                                + Util.getBetweenPos(from: inter, to: comp2.pos)
                 if let dir = Util.toDir(from: fromComp.pos, to: inter) {
                     // check cable does not get cut
                     if !fromComp.isMovable(dir: dir) {
