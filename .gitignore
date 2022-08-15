@@ -5,6 +5,7 @@ tools/
 .mypy_cache/
 tmp/
 *.o
+.swift-version
 xcuserdata
 *.ipynb
 __pycache__

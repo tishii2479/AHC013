@@ -57,19 +57,12 @@ final class SolverV1: Solver {
     }
     
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
-        if let cluster = connectOneClusterBfs(
+        let _ = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
             distLimit: 20,
-            costLimit: param.costLimit
-        ) {
-            let _ = connectOneClusterBfs(
-                types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-                distLimit: 20,
-                costLimit: param.costLimit,
-                extend: true,
-                startComps: Array(cluster.comps)
-            )
-        }
+            costLimit: param.costLimit,
+            extend: true
+        )
         return (field.calcScore(), currentCommands)
     }
     
