@@ -56,20 +56,20 @@ func main() {
 
     Time.timeLimit = param.searchTime
 
-//    while Time.elapsedTime() < param.searchTime {
-    for _ in 0 ..< 1 {
+    while Time.elapsedTime() < param.searchTime {
+//    for _ in 0 ..< 1 {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
         let solver = SolverV1(field: field)
         let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
         IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         
-        output(solver: solver, commandLimit: computerTypes * 100)
-//        let _ = solver.constructSecondCluster(param: param)
-//        let _ = solver.constructSecondCluster(param: param)
+//        output(solver: solver, commandLimit: computerTypes * 100)
+        let _ = solver.constructSecondCluster(param: param)
+        let _ = solver.constructSecondCluster(param: param)
         let (score2, cost2) = solver.constructSecondCluster(param: param)
         solvers.append((score2, cost2, solver))
         IO.log("b:", score2, cost2, Time.elapsedTime(), type: .log)
-        output(solver: solver, commandLimit: computerTypes * 100)
+//        output(solver: solver, commandLimit: computerTypes * 100)
         
         mainType += 1
         if mainType > computerTypes {
@@ -92,7 +92,7 @@ func main() {
     
     Time.timeLimit = 2.8
 
-//    let (score, _) = bestSolver.constructOtherClusters(param: param)
+    let _ = bestSolver.constructOtherClusters(param: param)
     
     output(solver: bestSolver, commandLimit: computerTypes * 100)
     
