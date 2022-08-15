@@ -79,6 +79,16 @@ struct Cluster {
         }
     }
     
+    var mainType: Int {
+        var ret = 1
+        for (i, count) in typeCounts.enumerated() {
+            if count > typeCounts[ret] {
+                ret = i
+            }
+        }
+        return ret
+    }
+    
     mutating func getScore(addType: Int) -> Int {
         getScore(addTypes: [addType])
     }

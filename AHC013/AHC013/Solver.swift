@@ -41,12 +41,20 @@ final class SolverV1: Solver {
     }
     
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
-        let _ = connectOneClusterBfs(
+        if let cluster = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
             distLimit: field.size / 2,
             costLimit: param.costLimit,
             extend: true
-        )
+        ) {
+            let _ = connectOneClusterBfs(
+                types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
+                distLimit: field.size / 2,
+                costLimit: param.costLimit * 2,
+                extend: true,
+                startComps: Array(cluster.comps)
+            )
+        }
         return (field.calcScore(), currentCommands)
     }
     
@@ -498,70 +506,6 @@ extension SolverV1 {
             }
         }
         
-        return (selectedMoves, selectedMovedComp)
-    }
-}
-
-extension SolverV1 {
-    private func getMovesToConnectComp(
-        comp1: Computer, comp2: Computer
-    ) -> ([Move]?, Computer?) {
-        var selectedMoves: [Move]? = nil
-        var selectedMovedComp: Computer? = nil
-        
-        let currentScore = field.getCluster(ofComputer: comp1).calcScore()
-            + field.getCluster(ofComputer: comp2).calcScore()
-
-        let intersections = Util.intersections(comp1.pos, comp2.pos)
-        for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
-            for inter in intersections {
-                var temporaryMoves: [Move] = []
-                defer { reverseTemporaryMoves(moves: temporaryMoves) }
-                let ignorePos = [comp1.pos, inter, comp2.pos]
-                                + Util.getBetweenPos(from: comp1.pos, to: inter)
-                                + Util.getBetweenPos(from: inter, to: comp2.pos)
-                if let dir = Util.toDir(from: fromComp.pos, to: inter) {
-                    // check cable does not get cut
-                    if !fromComp.isMovable(dir: dir) {
-                        continue
-                    }
-                    // check extend cables
-                    if fromComp.connectedComp(to: dir.rev) != nil,
-                       !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
-                        continue
-                    }
-                }
-                guard checkConnectable(from: inter, to: toComp.pos, compType: toComp.type) else {
-                    continue
-                }
-
-                // TODO: refactor
-                let (isCompleted1, moves1) = movesToClear(
-                    from: fromComp.pos, to: inter,
-                    ignorePos: ignorePos, fixedComp: [fromComp, toComp], addEnd: true
-                )
-                temporaryMoves.append(contentsOf: moves1)
-                guard isCompleted1 else { continue }
-                let (isCompleted2, moves2) = moveToPos(from: fromComp.pos, pos: inter)
-                temporaryMoves.append(contentsOf: moves2)
-                guard isCompleted2 else { continue }
-                let (isCompleted3, moves3) = movesToClear(
-                    from: inter, to: toComp.pos,
-                    ignorePos: ignorePos, fixedComp: [fromComp, toComp]
-                )
-                temporaryMoves.append(contentsOf: moves3)
-                guard isCompleted3 else { continue }
-
-                let moves = moves1 + moves2 + moves3
-                let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
-                let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
-                let didImproveScore = newCluster.calcScore() > currentScore
-                if didImprovedMoves && didImproveScore {
-                    selectedMoves = moves
-                    selectedMovedComp = fromComp
-                }
-            }
-        }
         return (selectedMoves, selectedMovedComp)
     }
     
