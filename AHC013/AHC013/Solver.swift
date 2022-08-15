@@ -19,7 +19,7 @@ final class SolverV1: Solver {
         self.field = field
         nearComputers = getNearCompPair(
             types: Array(1 ... field.computerTypes), distF: Util.distF,
-            distLimit: 20
+            distLimit: field.size / 2
         )
     }
     
@@ -43,7 +43,7 @@ final class SolverV1: Solver {
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
         let _ = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-            distLimit: 20,
+            distLimit: field.size / 2,
             costLimit: param.costLimit,
             extend: true
         )
@@ -55,7 +55,7 @@ final class SolverV1: Solver {
         while Time.isInTime() {
             let _ = connectOneClusterBfs(
                 types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-                distLimit: 10,
+                distLimit: field.size / 3,
                 costLimit: costLimit
             )
             costLimit += 1

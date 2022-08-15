@@ -21,23 +21,6 @@ func output(solver: SolverV1, commandLimit: Int) {
         IO.output(connects[i].outValue)
     }
 
-    // TODO: Remove when submission
-//    guard moveCount + connectCount > 0 else {
-//        IO.log("moves and connects are empty..", type: .error)
-//        return
-//    }
-//    for i in 1 ... moveCount + connectCount {
-//        IO.output("\(min(i, moveCount))")
-//        for j in 0 ..< min(i, moveCount) {
-//            IO.output(moves[j].outValue)
-//        }
-//        IO.output("\(max(0, i - moveCount))")
-//        if i <= moveCount { continue }
-//        for j in 0 ..< i - moveCount {
-//            IO.output(connects[j].outValue)
-//        }
-//    }
-
     IO.log("Moves:", moveCount, "Connects:", connectCount)
 }
 
@@ -50,7 +33,11 @@ func main() {
     }
     
     // TODO: Optimize
-    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5, searchTime: 2.2)
+    let param = Parameter(
+        distLimit: fieldSize / 5,
+        costLimit: computerTypes == 2 ? 3 : 5,
+        searchTime: 2.2
+    )
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
 
