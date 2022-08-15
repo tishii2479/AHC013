@@ -34,6 +34,7 @@ final class SolverV1: Solver {
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
         connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: type)
+        
         IO.log("start:", Time.elapsedTime())
         for comp1 in field.computerGroup[type] {
             for comp2 in field.computerGroup[type] {
@@ -50,6 +51,7 @@ final class SolverV1: Solver {
             }
         }
         IO.log("end:", Time.elapsedTime())
+
         return (field.calcScore(), currentCommands)
     }
     
@@ -389,32 +391,34 @@ extension SolverV1 {
     ) -> (Computer, Computer)? {
         let cluster1 = field.getPreciseCluster(ofComputer: comp1)
         let cluster2 = field.getPreciseCluster(ofComputer: comp2)
-
-        for compInCluster1 in cluster1.comps {
-            for compInCluster2 in cluster2.comps {
-                // TODO: temporary, remove
-                guard Util.isAligned(compInCluster1.pos, compInCluster2.pos) else {
-                    continue
+        
+        for (newComp1, newComp2) in reconnectablePairs {
+            guard !connects.contains(Connect(comp1: newComp1, comp2: newComp2)) else {
+                continue
+            }
+            guard !(comp1 == newComp1 && comp2 == newComp2) &&
+                    !(comp1 == newComp2 && comp2 == newComp1)else {
+                continue
+            }
+            guard (cluster1.comps.contains(newComp1) && cluster2.comps.contains(newComp2))
+                    || (cluster1.comps.contains(newComp2) && cluster2.comps.contains(newComp1)) else {
+                continue
+            }
+            var doesIntersect = false
+            // check if the new cable is not on ignorePos
+            for pos in Util.getBetweenPos(from: newComp1.pos, to: newComp2.pos) {
+                if ignorePos.contains(pos) {
+                    doesIntersect = true
+                    break
                 }
-                guard !(comp1 == compInCluster1 && comp2 == compInCluster2) else {
-                    continue
-                }
-                var doesIntersect = false
-                // check if the new cable is not on ignorePos
-                for pos in Util.getBetweenPos(from: compInCluster1.pos, to: compInCluster2.pos) {
-                    if ignorePos.contains(pos) {
-                        doesIntersect = true
-                        break
-                    }
-                }
-                guard !doesIntersect else {
-                    continue
-                }
-                if let _ = getMovesToConnectComp(
-                    comp1: compInCluster1, comp2: compInCluster2, additionalIgnorePos: ignorePos,
-                    additionalFixedComp: fixedComp, checkImproveScore: false) as? ([Move], Computer?) {
-                    return (compInCluster1, compInCluster2)
-                }
+            }
+            guard !doesIntersect else {
+                continue
+            }
+            if let _ = getMovesToConnectComp(
+                comp1: newComp1, comp2: newComp2, additionalIgnorePos: ignorePos,
+                additionalFixedComp: fixedComp, checkImproveScore: false) as? ([Move], Computer?) {
+                return (newComp1, newComp2)
             }
         }
         return nil
