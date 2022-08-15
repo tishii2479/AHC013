@@ -6,7 +6,6 @@ final class SolverV1: Solver {
     let field: Field
     private(set) var performedMoves: [Move] = []
     private(set) var connects = Set<Connect>()
-    private var temporaryMoves: [Move] = []
     private var mainType: Int = 0
     
     private var nearComputers: [Computer: [(Int, Computer)]] = [:]
@@ -221,6 +220,8 @@ extension SolverV1 {
         let intersections = Util.intersections(comp1.pos, comp2.pos)
         for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
             for inter in intersections {
+                var temporaryMoves: [Move] = []
+                defer { reverseTemporaryMoves(moves: temporaryMoves) }
                 let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
                     Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
                 if let dir = Util.toDir(from: fromComp.pos, to: inter) {
@@ -234,30 +235,37 @@ extension SolverV1 {
                         continue
                     }
                 }
-                if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
-                   let moves1 = movesToClear(
+                guard checkConnectable(from: inter, to: toComp.pos, compType: toComp.type) else {
+                    continue
+                }
+
+                // TODO: refactor
+                let (isCompleted1, moves1) = movesToClear(
                     from: fromComp.pos, to: inter,
                     ignorePos: ignorePos, fixedComp: [fromComp, toComp], addEnd: true
-                   ),
-                   let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
-                   let moves2 = movesToClear(
+                )
+                temporaryMoves.append(contentsOf: moves1)
+                guard isCompleted1 else { continue }
+                let (isCompleted2, moves2) = moveToInter(from: fromComp.pos, inter: inter)
+                temporaryMoves.append(contentsOf: moves2)
+                guard isCompleted2 else { continue }
+                let (isCompleted3, moves3) = movesToClear(
                     from: inter, to: toComp.pos,
                     ignorePos: ignorePos, fixedComp: [fromComp, toComp]
-                   ) {
-                    let moves = moves1 + moveToInter + moves2
+                )
+                temporaryMoves.append(contentsOf: moves3)
+                guard isCompleted3 else { continue }
 
-                    let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
-                    let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
-                    let didImproveScore = newCluster.calcScore() > currentScore
-                    if didImprovedMoves && didImproveScore {
-                        selectedMoves = moves
-                        selectedMovedComp = fromComp
-                    }
+                let moves = moves1 + moves2 + moves3
+                let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
+                let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
+                let didImproveScore = newCluster.calcScore() > currentScore
+                if didImprovedMoves && didImproveScore {
+                    selectedMoves = moves
+                    selectedMovedComp = fromComp
                 }
-                reverseTemporaryMoves()
             }
         }
-        
         return (selectedMoves, selectedMovedComp)
     }
     
@@ -383,33 +391,30 @@ extension SolverV1 {
         )
     }
     
-    func moveToInter(from: Pos, inter: Pos) -> [Move]? {
+    func moveToInter(from: Pos, inter: Pos) -> (Bool, [Move]) {
         guard let interMoves = Util.getMoves(from: from, to: inter) else {
-            return nil
+            return (false, [])
         }
         performTemporaryMoves(moves: interMoves)
-        return interMoves
+        return (true, interMoves)
     }
     
-    func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], fixedComp: [Computer], addEnd: Bool = false) -> [Move]? {
+    func movesToClear(from: Pos, to: Pos, ignorePos: [Pos], fixedComp: [Computer], addEnd: Bool = false) -> (Bool, [Move]) {
         let path = Util.getBetweenPos(from: from, to: to, addEnd: addEnd)
         var clearMoves = [Move]()
         for pos in path {
             guard field.cell(pos: pos).isComputer else { continue }
-            
             guard let emptyPos = field.findNearestEmptyCell(at: pos, ignorePos: ignorePos) else {
 //                IO.log("Could not find empty cell")
-                return nil
+                return (false, clearMoves)
             }
-            
             guard let movesToEmpty = movesToEmptyCell(from: pos, to: emptyPos, fixedComp: fixedComp) else {
-                return nil
+                return (false, clearMoves)
             }
-
             performTemporaryMoves(moves: movesToEmpty)
             clearMoves.append(contentsOf: movesToEmpty)
         }
-        return clearMoves
+        return (true, clearMoves)
     }
     
     func movesToEmptyCell(from: Pos, to: Pos, fixedComp: [Computer], trialLimit: Int = 20) -> [Move]? {
@@ -458,14 +463,12 @@ extension SolverV1 {
     
     private func performTemporaryMoves(moves: [Move]) {
         for move in moves {
-            temporaryMoves.append(move)
             field.performMove(move: move, isTemporary: true)
         }
     }
 
-    private func reverseTemporaryMoves() {
-        field.reverseMoves(moves: temporaryMoves)
-        temporaryMoves.removeAll()
+    private func reverseTemporaryMoves(moves: [Move]) {
+        field.reverseMoves(moves: moves)
     }
     
     private func performMoves(moves: [Move]) {
