@@ -22,6 +22,7 @@ class Util {
     }
     
     static func toDir(from: Pos, to: Pos) -> Dir? {
+        guard from != to else { return nil }
         let dirs = getDir(from: from, to: to)
         guard dirs.count == 1 else {
             IO.log("Could not get dir from: \(from) to: \(to)", type: .warn)
@@ -44,6 +45,9 @@ class Util {
     }
 
     static func getBetweenPos(from: Pos, to: Pos, addEnd: Bool = false) -> [Pos] {
+        guard from != to else {
+            return []
+        }
         guard isAligned(from, to) else {
             IO.log("\(from) and \(to) is not aligned", type: .warn)
             return []
@@ -76,10 +80,7 @@ class Util {
         return (dx > 0 && dy == 0) || (dx == 0 && dy > 0)
     }
     
-    static func intersections(_ a: Pos, _ b: Pos) -> [Pos]? {
-        if isAligned(a, b) {
-            return nil
-        }
+    static func intersections(_ a: Pos, _ b: Pos) -> [Pos] {
         return [Pos(x: a.x, y: b.y), Pos(x: b.x, y: a.y)]
     }
     
