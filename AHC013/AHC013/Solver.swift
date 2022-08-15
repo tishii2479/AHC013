@@ -9,7 +9,7 @@ final class SolverV1: Solver {
     private var mainType: Int = 0
     
     private var nearComputers: [Computer: [(Int, Computer)]] = [:]
-    private var reconnectablePairs: [(Computer, Computer)] = []
+    private var reconnectablePairs: [(Int, Computer, Computer)] = []
     
     private var currentCommands: Int {
         performedMoves.count + connects.count
@@ -35,23 +35,7 @@ final class SolverV1: Solver {
         connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: type)
         
-        IO.log("start:", Time.elapsedTime())
-        for comp1 in field.computerGroup[type] {
-            for comp2 in field.computerGroup[type] {
-                guard Time.isInTime() else { break }
-                let connect = Connect(comp1: comp1, comp2: comp2)
-                guard !connects.contains(connect) else { continue }
-                // TODO: temporary, remove
-                guard Util.isAligned(comp1.pos, comp2.pos) else {
-                    continue
-                }
-                if let _ = getMovesToConnectComp(
-                    comp1: comp1, comp2: comp2, checkImproveScore: false) as? ([Move], Computer?) {
-                    reconnectablePairs.append((comp1, comp2))
-                }
-            }
-        }
-        IO.log("end:", Time.elapsedTime())
+        reconnectablePairs = prepareReconnectablePairs()
 
         return (field.calcScore(), currentCommands)
     }
@@ -415,7 +399,7 @@ extension SolverV1 {
         let cluster1 = field.getPreciseCluster(ofComputer: comp1)
         let cluster2 = field.getPreciseCluster(ofComputer: comp2)
         
-        for (newComp1, newComp2) in reconnectablePairs {
+        for (_, newComp1, newComp2) in reconnectablePairs {
             guard !connects.contains(Connect(comp1: newComp1, comp2: newComp2)) else {
                 continue
             }
@@ -688,6 +672,28 @@ extension SolverV1 {
         }
         IO.log("getNearCompPair:end", Time.elapsedTime())
         return ret
+    }
+    
+    private func prepareReconnectablePairs() -> [(Int, Computer, Computer)] {
+        IO.log("start:", Time.elapsedTime())
+        var pairs: [(Int, Computer, Computer)] = []
+        for comp1 in field.computerGroup[mainType] {
+            for comp2 in field.computerGroup[mainType] {
+                guard Time.isInTime() else { break }
+                let connect = Connect(comp1: comp1, comp2: comp2)
+                guard !connects.contains(connect) else { continue }
+                // TODO: temporary, remove
+                guard Util.isAligned(comp1.pos, comp2.pos) else {
+                    continue
+                }
+                if let (moves, _) = getMovesToConnectComp(
+                    comp1: comp1, comp2: comp2, checkImproveScore: false) as? ([Move], Computer?) {
+                    pairs.append((moves.count, comp1, comp2))
+                }
+            }
+        }
+        IO.log("end:", Time.elapsedTime())
+        return pairs.sorted(by: { $0.0 < $1.0 })
     }
     
     private func checkConnectable(from: Pos, to: Pos, compType: Int) -> Bool {
