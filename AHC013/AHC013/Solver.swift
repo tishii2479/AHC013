@@ -11,7 +11,7 @@ final class SolverV1: Solver {
     private var nearComputers: [Computer: [(Int, Computer)]] = [:]
     private var reconnectablePairs: [(Int, Computer, Computer)] = []
     
-    private var currentCommands: Int {
+    var currentCommands: Int {
         performedMoves.count + connects.count
     }
 
