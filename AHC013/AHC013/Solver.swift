@@ -160,8 +160,6 @@ extension SolverV1 {
                         var ok = true
                         var tempConnects = [Connect]()
                         var connectedComps = [Computer]()
-                            
-                        // FIXME: make it possible to connect between empty cells
                         
                         for i in 0 ..< dirs.count {
                             let nextPos = cPos + dirs[i]
@@ -220,59 +218,44 @@ extension SolverV1 {
         let currentScore = field.getCluster(ofComputer: comp1).calcScore()
             + field.getCluster(ofComputer: comp2).calcScore()
 
-        if let intersections = Util.intersections(comp1.pos, comp2.pos) {
-            for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
-                for inter in intersections {
-                    let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
-                        Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
-                    if let dir = Util.toDir(from: fromComp.pos, to: inter) {
-                        // check cable does not get cut
-                        if !fromComp.isMovable(dir: dir) {
-                            continue
-                        }
-                        // check extend cables
-                        if fromComp.connectedComp(to: dir.rev) != nil,
-                           !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
-                            continue
-                        }
+        let intersections = Util.intersections(comp1.pos, comp2.pos)
+        for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
+            for inter in intersections {
+                let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: inter) + [inter] +
+                    Util.getBetweenPos(from: inter, to: comp2.pos) + [comp2.pos]
+                if let dir = Util.toDir(from: fromComp.pos, to: inter) {
+                    // check cable does not get cut
+                    if !fromComp.isMovable(dir: dir) {
+                        continue
                     }
-                    if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
-                       let moves1 = movesToClear(
-                        from: fromComp.pos, to: inter,
-                        ignorePos: ignorePos, fixedComp: [fromComp, toComp], addEnd: true
-                       ),
-                       let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
-                       let moves2 = movesToClear(
-                        from: inter, to: toComp.pos,
-                        ignorePos: ignorePos, fixedComp: [fromComp, toComp]
-                       ) {
-                        let moves = moves1 + moveToInter + moves2
+                    // check extend cables
+                    if fromComp.connectedComp(to: dir.rev) != nil,
+                       !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
+                        continue
+                    }
+                }
+                if checkConnectable(from: inter, to: toComp.pos, compType: toComp.type),
+                   let moves1 = movesToClear(
+                    from: fromComp.pos, to: inter,
+                    ignorePos: ignorePos, fixedComp: [fromComp, toComp], addEnd: true
+                   ),
+                   let moveToInter = moveToInter(from: fromComp.pos, inter: inter),
+                   let moves2 = movesToClear(
+                    from: inter, to: toComp.pos,
+                    ignorePos: ignorePos, fixedComp: [fromComp, toComp]
+                   ) {
+                    let moves = moves1 + moveToInter + moves2
 
-                        let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
-                        let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
-                        let didImproveScore = newCluster.calcScore() > currentScore
-                        if didImprovedMoves && didImproveScore {
-                            selectedMoves = moves
-                            selectedMovedComp = fromComp
-                        }
+                    let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
+                    let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
+                    let didImproveScore = newCluster.calcScore() > currentScore
+                    if didImprovedMoves && didImproveScore {
+                        selectedMoves = moves
+                        selectedMovedComp = fromComp
                     }
-                    reverseTemporaryMoves()
                 }
+                reverseTemporaryMoves()
             }
-        }
-        else {
-            // is already aligned
-            let ignorePos = [comp1.pos] + Util.getBetweenPos(from: comp1.pos, to: comp2.pos) + [comp2.pos]
-            if checkConnectable(from: comp1.pos, to: comp2.pos, compType: comp1.type),
-               let moves = movesToClear(from: comp1.pos, to: comp2.pos,
-                                        ignorePos: ignorePos, fixedComp: [comp1, comp2]) {
-                let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
-                let didImproveScore = newCluster.calcScore() > currentScore
-                if didImproveScore {
-                    selectedMoves = moves
-                }
-            }
-            reverseTemporaryMoves()
         }
         
         return (selectedMoves, selectedMovedComp)
