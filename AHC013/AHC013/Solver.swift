@@ -33,6 +33,22 @@ final class SolverV1: Solver {
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
         connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: type)
+        IO.log("start:", Time.elapsedTime())
+        for comp1 in field.computerGroup[type] {
+            for comp2 in field.computerGroup[type] {
+                let connect = Connect(comp1: comp1, comp2: comp2)
+                guard !connects.contains(connect) else { continue }
+                // TODO: temporary, remove
+                guard Util.isAligned(comp1.pos, comp2.pos) else {
+                    continue
+                }
+                if let _ = getMovesToConnectComp(
+                    comp1: comp1, comp2: comp2, checkImproveScore: false) as? ([Move], Computer?) {
+                    IO.log("Found moves to connect: \(comp1.pos), \(comp2.pos)")
+                }
+            }
+        }
+        IO.log("end:", Time.elapsedTime())
         return (field.calcScore(), currentCommands)
     }
     
@@ -121,7 +137,6 @@ extension SolverV1 {
                 )
                 // extend bfs
                 if connected {
-                    IO.log("connected: \(comp.pos), \(nearComp.pos)")
                     q.push(nearComp)
                 }
             }
@@ -242,10 +257,13 @@ extension SolverV1 {
             }
             let testCutConnect = Connect(comp1: cable.comp1, comp2: cable.comp2)
             var temporaryMoves = [Move]()
+            var isReconnected: Bool = false
             resetConnect(connect: testCutConnect)
             defer {
                 reverseTemporaryMoves(moves: temporaryMoves)
-                performConnect(connect: testCutConnect)
+                if !isReconnected {
+                    performConnect(connect: testCutConnect)
+                }
             }
             
             let ignorePosToClear = [compInCluster.pos] + Util.getBetweenPos(from: compInCluster.pos, to: inter) + [inter] +
@@ -261,8 +279,6 @@ extension SolverV1 {
             let (isCompleted2, moves2) = moveToPos(from: compToConnect.pos, pos: inter)
             temporaryMoves.append(contentsOf: moves2)
             guard isCompleted2 else { continue }
-            
-            IO.log("try: \(compInCluster.pos), \(compToConnect.pos), \(compToConnect.type)")
 
             guard let (reconnectComp1, reconnectComp2) = findReconnection(
                 comp1: cable.comp1, comp2: cable.comp2,
@@ -271,9 +287,6 @@ extension SolverV1 {
             ) else {
                 continue
             }
-
-            IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
-            IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
             
             let ignorePos = Util.getBetweenPos(from: compInCluster.pos, to: inter)
                             + Util.getBetweenPos(from: reconnectComp1.pos, to: reconnectComp2.pos)
@@ -282,7 +295,8 @@ extension SolverV1 {
             
             guard let (movesToReconnect, movedCompToReconnect) = getMovesToConnectComp(
                 comp1: reconnectComp1, comp2: reconnectComp2,
-                additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp) as? ([Move], Computer?) else {
+                additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp,
+                checkImproveScore: false) as? ([Move], Computer?) else {
                 continue
             }
             temporaryMoves.append(contentsOf: movesToReconnect)
@@ -290,14 +304,18 @@ extension SolverV1 {
             
             guard let (movesToExtend, movedCompToExtend) = getMovesToConnectComp(
                     comp1: compInCluster, comp2: compToConnect,
-                    additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp) as? ([Move], Computer?) else {
+                    additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp,
+                    checkImproveScore: false) as? ([Move], Computer?) else {
                 continue
             }
             temporaryMoves.append(contentsOf: movesToExtend)
             performTemporaryMoves(moves: movesToExtend)
             
-            IO.log("d: \(reconnectComp1.pos), \(reconnectComp2.pos), \(compInCluster.pos), \(reconnectComp2.pos)")
+            IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
+            IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
+
             reverseTemporaryMoves(moves: temporaryMoves)
+            temporaryMoves.removeAll()
             
             let moves = moves1 + moves2 + movesToReconnect + movesToExtend
             let connects = [
@@ -310,6 +328,7 @@ extension SolverV1 {
                 moves: moves, connects: connects, costLimit: costLimit, movedComps: movedComps
             ) {
                 IO.log("extended")
+                isReconnected = true
                 return true
             }
         }
@@ -344,8 +363,8 @@ extension SolverV1 {
         comp1: Computer, comp2: Computer,
         ignorePos: [Pos], fixedComp: [Computer]
     ) -> (Computer, Computer)? {
-        let cluster1 = field.getCluster(ofComputer: comp1)
-        let cluster2 = field.getCluster(ofComputer: comp2)
+        let cluster1 = field.getPreciseCluster(ofComputer: comp1)
+        let cluster2 = field.getPreciseCluster(ofComputer: comp2)
 
         for compInCluster1 in cluster1.comps {
             for compInCluster2 in cluster2.comps {
@@ -359,7 +378,7 @@ extension SolverV1 {
                 var doesIntersect = false
                 // check if the new cable is not on ignorePos
                 for pos in Util.getBetweenPos(from: compInCluster1.pos, to: compInCluster2.pos) {
-                    if ignorePos.contains(pos) || field.cell(pos: pos).isComputer {
+                    if ignorePos.contains(pos) {
                         doesIntersect = true
                         break
                     }
@@ -369,7 +388,7 @@ extension SolverV1 {
                 }
                 if let _ = getMovesToConnectComp(
                     comp1: compInCluster1, comp2: compInCluster2, additionalIgnorePos: ignorePos,
-                    additionalFixedComp: fixedComp) as? ([Move], Computer?) {
+                    additionalFixedComp: fixedComp, checkImproveScore: false) as? ([Move], Computer?) {
                     return (compInCluster1, compInCluster2)
                 }
             }
@@ -382,7 +401,8 @@ extension SolverV1 {
     private func getMovesToConnectComp(
         comp1: Computer, comp2: Computer,
         additionalIgnorePos: [Pos] = [],
-        additionalFixedComp: [Computer] = []
+        additionalFixedComp: [Computer] = [],
+        checkImproveScore: Bool = true
     ) -> ([Move]?, Computer?) {
         var selectedMoves: [Move]? = nil
         var selectedMovedComp: Computer? = nil
@@ -433,7 +453,7 @@ extension SolverV1 {
                 let moves = moves1 + moves2 + moves3
                 let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
                 let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
-                let didImproveScore = newCluster.calcScore() > currentScore
+                let didImproveScore = !checkImproveScore || newCluster.calcScore() > currentScore
                 if didImprovedMoves && didImproveScore {
                     selectedMoves = moves
                     selectedMovedComp = fromComp

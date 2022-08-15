@@ -236,6 +236,25 @@ class Field {
 }
 
 extension Field {
+    func getPreciseCluster(ofComputer comp: Computer) -> Cluster {
+        var comps = Set<Computer>()
+        comps.insert(comp)
+
+        var q = Queue<Computer>()
+        q.push(comp)
+
+        while let comp = q.pop() {
+            for connectedComp in comp.connected {
+                guard !comps.contains(connectedComp) else { continue }
+                q.push(connectedComp)
+                comps.insert(connectedComp)
+            }
+        }
+
+        let cluster = Cluster(comps: comps, types: computerTypes)
+        return cluster
+    }
+    
     func getCluster(ofComputer comp: Computer) -> Cluster {
         clusters[uf.root(of: comp.id)]
     }
