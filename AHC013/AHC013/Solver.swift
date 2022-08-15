@@ -56,19 +56,26 @@ final class SolverV1: Solver {
     }
     
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
-        connectOneClusterBfs(
+        if let cluster = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
             distLimit: 20,
-            costLimit: param.costLimit,
-            extend: true
-        )
+            costLimit: param.costLimit
+        ) {
+            let _ = connectOneClusterBfs(
+                types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
+                distLimit: 20,
+                costLimit: param.costLimit,
+                extend: true,
+                startComps: Array(cluster.comps)
+            )
+        }
         return (field.calcScore(), currentCommands)
     }
     
     func constructOtherClusters(param: Parameter) -> (Int, Int) {
         var costLimit = param.costLimit
         while Time.isInTime() {
-            connectOneClusterBfs(
+            let _ = connectOneClusterBfs(
                 types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
                 distLimit: 10,
                 costLimit: costLimit
@@ -97,43 +104,31 @@ extension SolverV1 {
     func connectOneClusterBfs(
         types: [Int], distLimit: Int = 100,
         costLimit: Int = 100, trialLimit: Int = 30,
-        extend: Bool = false
-    ) {
-        guard Time.isInTime() else { return }
-        var largestClusterSize = 0
-        var largestStartComp: Computer? = nil
-        
-//        IO.log("connectOneClusterBfs:searchStartComp:start", Time.elapsedTime())
-        for _ in 0 ..< trialLimit {
-            guard Time.isInTime() else { return }
-            guard let type = types.randomElement(),
-                  let startComp: Computer = field.computerGroup[type].randomElement(),
-                  !startComp.isConnected else {
-                continue
-            }
-            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: Util.distF)
-            if reachableComps.count > largestClusterSize {
-                largestClusterSize = reachableComps.count
-                largestStartComp = startComp
-            }
-        }
-//        IO.log("connectOneClusterBfs:searchStartComp:end", Time.elapsedTime())
-        
-        guard let startComp = largestStartComp else {
-            return
-        }
-        
+        extend: Bool = false,
+        startComps: [Computer]? = nil
+    ) -> Cluster? {
 //        IO.log("Selected:", startComp.type, startComp.pos, largestClusterSize)
-        
         var q = Queue<Computer>()
-        q.push(startComp)
+        var cluster = Cluster(comps: [], types: field.computerTypes)
+        
+        if let startComps = startComps {
+            for comp in startComps {
+                q.push(comp)
+                cluster.add(comp: comp)
+            }
+        }
+        else if let startComp = findStartCompForBfs(trialLimit: trialLimit, types: types) {
+            q.push(startComp)
+            cluster.add(comp: startComp)
+        }
+
         while let comp = q.pop() {
-            guard Time.isInTime() else { return }
+            guard Time.isInTime() else { return cluster }
             guard let nearComps = nearComputers[comp] else {
                 continue
             }
             for (_, nearComp) in nearComps {
-                guard Time.isInTime() else { return }
+                guard Time.isInTime() else { return cluster }
                 let dist = Util.distF(comp.pos, nearComp.pos)
                 var connected = connectCompIfPossible(
                     comp1: comp, comp2: nearComp,
@@ -148,9 +143,12 @@ extension SolverV1 {
                 // extend bfs
                 if connected {
                     q.push(nearComp)
+                    cluster.add(comp: nearComp)
                 }
             }
         }
+        
+        return cluster
     }
     
     func connectOneClusterWithOtherComputer(
@@ -359,6 +357,32 @@ extension SolverV1 {
             }
         }
         return false
+    }
+    
+    private func findStartCompForBfs(
+        trialLimit: Int, types: [Int]
+    ) -> Computer? {
+        guard Time.isInTime() else { return nil }
+        var largestClusterSize = 0
+        var largestStartComp: Computer? = nil
+        
+//        IO.log("connectOneClusterBfs:searchStartComp:start", Time.elapsedTime())
+        for _ in 0 ..< trialLimit {
+            guard Time.isInTime() else { return nil }
+            guard let type = types.randomElement(),
+                  let startComp: Computer = field.computerGroup[type].randomElement(),
+                  !startComp.isConnected else {
+                continue
+            }
+            let reachableComps = field.getNearComputers(aroundComp: startComp, loopLimit: field.size * field.size, distF: Util.distF)
+            if reachableComps.count > largestClusterSize {
+                largestClusterSize = reachableComps.count
+                largestStartComp = startComp
+            }
+        }
+//        IO.log("connectOneClusterBfs:searchStartComp:end", Time.elapsedTime())
+        
+        return largestStartComp
     }
 
     private func findCableToReconnect(
