@@ -1,10 +1,9 @@
 protocol Solver {
-    init(field: Field, param: Parameter)
+    init(field: Field)
 }
 
 final class SolverV1: Solver {
     let field: Field
-    private let param: Parameter
     private(set) var performedMoves: [Move] = []
     private(set) var connects = Set<Connect>()
     private var mainType: Int = 0
@@ -12,16 +11,15 @@ final class SolverV1: Solver {
     private var nearComputers: [Computer: [(Int, Computer)]] = [:]
     private var reconnectablePairs: [(Int, Computer, Computer)] = []
     
-    private var currentCommands: Int {
+    var currentCommands: Int {
         performedMoves.count + connects.count
     }
 
-    init(field: Field, param: Parameter) {
+    init(field: Field) {
         self.field = field
-        self.param = param
         nearComputers = getNearCompPair(
             types: Array(1 ... field.computerTypes), distF: Util.distF,
-            distLimit: param.d3
+            distLimit: field.size / 2
         )
     }
     
@@ -29,13 +27,12 @@ final class SolverV1: Solver {
         self.field = field
         self.performedMoves = performedMoves
         self.connects = connects
-        self.param = Parameter(n: field.size, k: field.computerTypes)
     }
 
-    func constructFirstCluster(type: Int) -> (Int, Int) {
+    func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
         mainType = type
-        connectOneClusterMst(type: type, distLimit: param.d1, costLimit: param.c1)
-        connectOneClusterMst(type: type, distLimit: param.d2, costLimit: param.c2)
+        connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
+        connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: type)
         
         reconnectablePairs = prepareReconnectablePairs()
@@ -43,27 +40,38 @@ final class SolverV1: Solver {
         return (field.calcScore(), currentCommands)
     }
     
-    func constructSecondCluster() -> (Int, Int) {
-        let _ = connectOneClusterBfs(
+    func constructSecondCluster(param: Parameter) -> (Int, Int) {
+        if let cluster = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-            distLimit: param.d3,
-            costLimit: param.c3,
+            distLimit: field.size / 2,
+            costLimit: param.costLimit,
             extend: true
-        )
-        return (field.calcScore(), currentCommands)
-    }
-    
-    func constructOtherClusters() -> (Int, Int) {
-        while Time.isInTime() {
+        ) {
             let _ = connectOneClusterBfs(
                 types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-                distLimit: param.d2,
-                costLimit: param.c2
+                distLimit: field.size / 2,
+                costLimit: param.costLimit * 2,
+                extend: true,
+                startComps: Array(cluster.comps)
             )
         }
         return (field.calcScore(), currentCommands)
     }
+    
+    func constructOtherClusters(param: Parameter) -> (Int, Int) {
+        var costLimit = param.costLimit
+        while Time.isInTime() {
+            let _ = connectOneClusterBfs(
+                types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
+                distLimit: field.size / 3,
+                costLimit: costLimit
+            )
+            costLimit += 1
+        }
+        return (field.calcScore(), currentCommands)
+    }
 }
+
 
 extension SolverV1 {
     func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
@@ -116,7 +124,7 @@ extension SolverV1 {
                 if !connected && extend {
                     connected = extendClusterByReconnecting(
                         compInCluster: comp, compToConnect: nearComp,
-                        costLimit: costLimit
+                        costLimit: costLimit * 2
                     )
                 }
                 // extend bfs
@@ -501,70 +509,6 @@ extension SolverV1 {
         
         return (selectedMoves, selectedMovedComp)
     }
-}
-
-extension SolverV1 {
-    private func getMovesToConnectComp(
-        comp1: Computer, comp2: Computer
-    ) -> ([Move]?, Computer?) {
-        var selectedMoves: [Move]? = nil
-        var selectedMovedComp: Computer? = nil
-        
-        let currentScore = field.getCluster(ofComputer: comp1).calcScore()
-            + field.getCluster(ofComputer: comp2).calcScore()
-
-        let intersections = Util.intersections(comp1.pos, comp2.pos)
-        for (fromComp, toComp) in [(comp1, comp2), (comp2, comp1)] {
-            for inter in intersections {
-                var temporaryMoves: [Move] = []
-                defer { reverseTemporaryMoves(moves: temporaryMoves) }
-                let ignorePos = [comp1.pos, inter, comp2.pos]
-                                + Util.getBetweenPos(from: comp1.pos, to: inter)
-                                + Util.getBetweenPos(from: inter, to: comp2.pos)
-                if let dir = Util.toDir(from: fromComp.pos, to: inter) {
-                    // check cable does not get cut
-                    if !fromComp.isMovable(dir: dir) {
-                        continue
-                    }
-                    // check extend cables
-                    if fromComp.connectedComp(to: dir.rev) != nil,
-                       !checkConnectable(from: fromComp.pos, to: inter, compType: toComp.type) {
-                        continue
-                    }
-                }
-                guard checkConnectable(from: inter, to: toComp.pos, compType: toComp.type) else {
-                    continue
-                }
-
-                // TODO: refactor
-                let (isCompleted1, moves1) = movesToClear(
-                    from: fromComp.pos, to: inter,
-                    ignorePos: ignorePos, fixedComp: [fromComp, toComp], addEnd: true
-                )
-                temporaryMoves.append(contentsOf: moves1)
-                guard isCompleted1 else { continue }
-                let (isCompleted2, moves2) = moveToPos(from: fromComp.pos, pos: inter)
-                temporaryMoves.append(contentsOf: moves2)
-                guard isCompleted2 else { continue }
-                let (isCompleted3, moves3) = movesToClear(
-                    from: inter, to: toComp.pos,
-                    ignorePos: ignorePos, fixedComp: [fromComp, toComp]
-                )
-                temporaryMoves.append(contentsOf: moves3)
-                guard isCompleted3 else { continue }
-
-                let moves = moves1 + moves2 + moves3
-                let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
-                let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
-                let didImproveScore = newCluster.calcScore() > currentScore
-                if didImprovedMoves && didImproveScore {
-                    selectedMoves = moves
-                    selectedMovedComp = fromComp
-                }
-            }
-        }
-        return (selectedMoves, selectedMovedComp)
-    }
     
     // Returns true if connected
     private func connectCompIfPossible(
@@ -627,7 +571,7 @@ extension SolverV1 {
     // ISSUE: slow
     private func getNearCompPair(
         types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int, maxSize: Int = 7
+        distLimit: Int, maxSize: Int = 10
     ) -> [Computer: [(Int, Computer)]] {
         IO.log("getNearCompPair:start", Time.elapsedTime())
         var ret = [Computer: [(Int, Computer)]]()

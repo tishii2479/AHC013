@@ -1,37 +1,9 @@
 import Foundation
 
 struct Parameter {
-    var d1: Int
-    var d2: Int
-    var d3: Int
-    var c1: Int
-    var c2: Int
-    var c3: Int
-    
-    init(n: Int, k: Int) {
-        d1 = 5
-        c1 = 3
-        d2 = 5
-        c2 = 3
-        d3 = 5
-        c3 = 3
-    }
-    
-    init(
-        d1: Int,
-        d2: Int,
-        d3: Int,
-        c1: Int,
-        c2: Int,
-        c3: Int
-    ) {
-        self.d1 = d1
-        self.d2 = d2
-        self.d3 = d3
-        self.c1 = c1
-        self.c2 = c2
-        self.c3 = c3
-    }
+    var distLimit: Int
+    var costLimit: Int
+    var searchTime: Double
 }
 
 func output(solver: SolverV1, commandLimit: Int) {
@@ -49,23 +21,6 @@ func output(solver: SolverV1, commandLimit: Int) {
         IO.output(connects[i].outValue)
     }
 
-    // TODO: Remove when submission
-//    guard moveCount + connectCount > 0 else {
-//        IO.log("moves and connects are empty..", type: .error)
-//        return
-//    }
-//    for i in 1 ... moveCount + connectCount {
-//        IO.output("\(min(i, moveCount))")
-//        for j in 0 ..< min(i, moveCount) {
-//            IO.output(moves[j].outValue)
-//        }
-//        IO.output("\(max(0, i - moveCount))")
-//        if i <= moveCount { continue }
-//        for j in 0 ..< i - moveCount {
-//            IO.output(connects[j].outValue)
-//        }
-//    }
-
     IO.log("Moves:", moveCount, "Connects:", connectCount)
 }
 
@@ -77,25 +32,33 @@ func main() {
         fieldInput[i] = IO.readString()
     }
     
+    // TODO: Optimize
+    let param = Parameter(
+        distLimit: fieldSize / 5,
+        costLimit: computerTypes == 2 ? 3 : 5,
+        searchTime: 2.2
+    )
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
-    
-    let searchTime = 2.3
 
-    Time.timeLimit = searchTime
+    Time.timeLimit = param.searchTime
 
-    while Time.elapsedTime() < searchTime {
+    while Time.elapsedTime() < param.searchTime {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
-        let solver = SolverV1(field: field, param: param)
-        let (score1, cost1) = solver.constructFirstCluster(type: mainType)
+        let solver = SolverV1(field: field)
+        let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
         IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         
 //        output(solver: solver, commandLimit: computerTypes * 100)
-        let _ = solver.constructSecondCluster()
-        let _ = solver.constructSecondCluster()
-        let (score2, cost2) = solver.constructSecondCluster()
-        solvers.append((score2, cost2, solver))
-        IO.log("b:", score2, cost2, Time.elapsedTime(), type: .log)
+        IO.log("a:", solver.currentCommands, score1, Time.elapsedTime())
+        let (score2, _) = solver.constructSecondCluster(param: param)
+        IO.log("b:", solver.currentCommands, score2, Time.elapsedTime())
+//        let (score3, _) = solver.constructSecondCluster(param: param)
+//        IO.log("c:", solver.currentCommands, score3, Time.elapsedTime())
+        let (score4, cost4) = solver.constructSecondCluster(param: param)
+        IO.log("d:", solver.currentCommands, score4, Time.elapsedTime())
+        solvers.append((score4, cost4, solver))
+        IO.log("b:", score4, cost4, Time.elapsedTime(), type: .log)
 //        output(solver: solver, commandLimit: computerTypes * 100)
         
         mainType += 1
@@ -119,7 +82,7 @@ func main() {
     
     Time.timeLimit = 2.8
 
-    let _ = bestSolver.constructOtherClusters()
+    let _ = bestSolver.constructOtherClusters(param: param)
     
     output(solver: bestSolver, commandLimit: computerTypes * 100)
     

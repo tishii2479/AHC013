@@ -61,12 +61,13 @@ def test_run(
             max_score = max(max_score, score)
 
         max_score_sum += max_score
-        if verbose or i % (cases // 10) == 0:
+        results.append(((n, k), sum / run))
+        if verbose:
             if verbose:
                 print("Average score for", in_file, sum / run)
                 print("          Average for", total_sum / (i + 1) / run)
-            results.append(((n, k), sum / run))
     print("[RESULT] Average is", total_sum / cases / run, ":", exe_file)
+
     if verbose:
         print("Score distribution:")
 

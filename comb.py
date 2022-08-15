@@ -1,6 +1,5 @@
 src_dir = "AHC013/AHC013/"
 files = [
-    "Parameter.swift",
     "Values.swift",
     "main.swift",
     "Solver.swift",
