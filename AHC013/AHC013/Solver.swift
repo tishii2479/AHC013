@@ -121,6 +121,7 @@ extension SolverV1 {
                 )
                 // extend bfs
                 if connected {
+                    IO.log("connected: \(comp.pos), \(nearComp.pos)")
                     q.push(nearComp)
                 }
             }
@@ -261,6 +262,8 @@ extension SolverV1 {
             temporaryMoves.append(contentsOf: moves2)
             guard isCompleted2 else { continue }
             
+            IO.log("try: \(compInCluster.pos), \(compToConnect.pos), \(compToConnect.type)")
+
             guard let (reconnectComp1, reconnectComp2) = findReconnection(
                 comp1: cable.comp1, comp2: cable.comp2,
                 ignorePos: Util.getBetweenPos(from: inter, to: compInCluster.pos),
@@ -268,8 +271,7 @@ extension SolverV1 {
             ) else {
                 continue
             }
-            
-            IO.log("try: \(compInCluster.pos), \(compToConnect.pos), \(inter), \(compToConnect.type)")
+
             IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
             IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
             
