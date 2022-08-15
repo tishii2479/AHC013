@@ -33,13 +33,16 @@
 
 ## TODO:
 
-1. 2つ目のクラスタは横切れるようにする
-    - スコアの最大値を上げる
-    - 実装方針を考える
 1. パラメータをN, Kごとに最適化
     - Moveの回数減らす
 1. 高速化
+    - getNearCompPair(_:)
 1. ビームサーチっぽいのをやる
+
+### 試す
+
+1. 優秀なSolverを拡張するのを何度も試す
+1. secondClusterを1回だけにする
 
 ## FIXME:
 
@@ -118,8 +121,8 @@
     - https://nyaannyaan.github.io/library/data-structure/rollback-union-find.hpp.html
 
 ```
-[RESULT] Average is 6050.12 : ./main.o
-[RESULT] Max score average is 6050.12 : ./main.o
+[RESULT] Average is 6478.583333333333 : ./main.o
+[RESULT] Max score average is 6478.583333333333 : ./main.o
 Score distribution:
 0000 ~ 0499:
 0500 ~ 0999:
@@ -127,40 +130,40 @@ Score distribution:
 1500 ~ 1999:
 2000 ~ 2499:
 2500 ~ 2999:
-3000 ~ 3499: oo
-3500 ~ 3999: o
-4000 ~ 4499: o
+3000 ~ 3499:
+3500 ~ 3999: ooo
+4000 ~ 4499:
 4500 ~ 4999: o
-5000 ~ 5499: ooooooooo
-5500 ~ 5999: oooooooooooooooooooooooo
-6000 ~ 6499: oooooooooooooooooooooooooooooooooooooo
+5000 ~ 5499: oooooooo
+5500 ~ 5999: oooooooooooo
+6000 ~ 6499: oooooooooooooooooooooooooooo
 6500 ~ 6999: ooooooooooooooooo
-7000 ~ 7499: ooooo
-7500 ~ 7999:
-8000 ~ 8499:
-8500 ~ 8999:
+7000 ~ 7499: ooooooooooooo
+7500 ~ 7999: oooooooooo
+8000 ~ 8499: oo
+8500 ~ 8999: oo
 9000 ~ 9499:
 9500 ~ 9999:
 Worst cases:
-Case: 59, score: 3341
-Case: 94, score: 3347
-Case: 217, score: 3352
-Case: 289, score: 3385
-Case: 46, score: 3390
-Case: 61, score: 3490
-Case: 263, score: 3566
-Case: 25, score: 3723
-Case: 37, score: 3803
-Case: 175, score: 3989
+Case: 263, score: 3264
+Case: 217, score: 3416
+Case: 94, score: 3522
+Case: 7, score: 3588
+Case: 289, score: 3621
+Case: 59, score: 3639
+Case: 255, score: 3726
+Case: 61, score: 3730
+Case: 25, score: 3740
+Case: 9, score: 3771
 Best cases:
-Case: 6, score: 7660
-Case: 50, score: 7545
-Case: 198, score: 7480
-Case: 243, score: 7398
-Case: 74, score: 7265
-Case: 166, score: 7188
-Case: 203, score: 7163
-Case: 27, score: 7112
-Case: 219, score: 7110
-Case: 38, score: 7080
+Case: 235, score: 8895
+Case: 19, score: 8866
+Case: 99, score: 8784
+Case: 127, score: 8692
+Case: 191, score: 8542
+Case: 211, score: 8523
+Case: 171, score: 8437
+Case: 43, score: 8375
+Case: 183, score: 8275
+Case: 47, score: 8256
 ```

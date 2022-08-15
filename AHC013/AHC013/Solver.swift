@@ -123,7 +123,7 @@ extension SolverV1 {
                 if !connected && extend {
                     connected = extendClusterByReconnecting(
                         compInCluster: comp, compToConnect: nearComp,
-                        costLimit: costLimit
+                        costLimit: costLimit * 2
                     )
                 }
                 // extend bfs
