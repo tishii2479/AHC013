@@ -258,19 +258,11 @@ final class SolverV1: Solver {
         }
     }
     
-    // Returns true if connected
-    private func connectCompIfPossible(
-        comp1: Computer, comp2: Computer,
-        dist: Int, distLimit: Int, costLimit: Int
-    ) -> Bool {
-        guard dist <= distLimit else {
-            return false
-        }
-        guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
-            return false
-        }
+    private func getMovesToConnectComp(
+        comp1: Computer, comp2: Computer
+    ) -> ([Move]?, Computer?) {
         var selectedMoves: [Move]? = nil
-        var selectedMoveComp: Computer? = nil
+        var selectedMovedComp: Computer? = nil
         
         let currentScore = field.getCluster(ofComputer: comp1).calcScore()
             + field.getCluster(ofComputer: comp2).calcScore()
@@ -308,7 +300,7 @@ final class SolverV1: Solver {
                         let didImproveScore = newCluster.calcScore() > currentScore
                         if didImprovedMoves && didImproveScore {
                             selectedMoves = moves
-                            selectedMoveComp = fromComp
+                            selectedMovedComp = fromComp
                         }
                     }
                     reverseTemporaryMoves()
@@ -330,26 +322,46 @@ final class SolverV1: Solver {
             reverseTemporaryMoves()
         }
         
+        return (selectedMoves, selectedMovedComp)
+    }
+    
+    // Returns true if connected
+    private func connectCompIfPossible(
+        comp1: Computer, comp2: Computer,
+        dist: Int, distLimit: Int, costLimit: Int
+    ) -> Bool {
+        guard dist <= distLimit else {
+            return false
+        }
+        guard !field.isInSameCluster(comp1: comp1, comp2: comp2) else {
+            return false
+        }
+        
+        guard let (moves, movedComp) =
+                getMovesToConnectComp(comp1: comp1, comp2: comp2) as? ([Move], Computer?) else {
+            return false
+        }
+        
         return performCommandIfPossible(
-            moves: selectedMoves, comp1: comp1, comp2: comp2,
-            costLimit: costLimit, selectedMoveComp: selectedMoveComp
+            moves: moves, connects: [Connect(comp1: comp1, comp2: comp2)],
+            costLimit: costLimit, movedComps: [movedComp]
         )
     }
     
     private func performCommandIfPossible(
-        moves: [Move]?, comp1: Computer, comp2: Computer,
-        costLimit: Int, selectedMoveComp: Computer? = nil
+        moves: [Move], connects: [Connect],
+        costLimit: Int, movedComps: [Computer?] = []
     ) -> Bool {
-        if let moves = moves {
-            let cost = moves.count + 1
-            // Check command limit
-            let satisfyCommandLimit = currentCommands + cost <= field.computerTypes * 100
-            let satisfyCostLimit = cost < costLimit
-           if satisfyCommandLimit && satisfyCostLimit {
-               performMoves(moves: moves)
-               performConnect(connect: Connect(comp1: comp1, comp2: comp2), movedComp: selectedMoveComp)
-               return true
-           }
+        let cost = moves.count + connects.count
+        // Check command limit
+        let satisfyCommandLimit = currentCommands + cost <= field.computerTypes * 100
+        let satisfyCostLimit = cost < costLimit
+        if satisfyCommandLimit && satisfyCostLimit {
+            performMoves(moves: moves)
+            for (connect, movedComp) in zip(connects, movedComps) {
+                performConnect(connect: connect, movedComp: movedComp)
+            }
+            return true
         }
         return false
     }
