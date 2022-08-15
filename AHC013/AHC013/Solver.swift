@@ -115,10 +115,10 @@ extension SolverV1 {
                     comp1: comp, comp2: nearComp,
                     dist: dist, distLimit: distLimit, costLimit: costLimit
                 )
-//                || extendClusterByReconnecting(
-//                    compInCluster: comp, compToConnect: nearComp,
-//                    costLimit: costLimit
-//                )
+                || extendClusterByReconnecting(
+                    compInCluster: comp, compToConnect: nearComp,
+                    costLimit: costLimit
+                )
                 // extend bfs
                 if connected {
                     q.push(nearComp)
@@ -227,78 +227,92 @@ extension SolverV1 {
     // reset temporary move comp2
     // add moves comp2 to temporary position to movesToConnect
     // if possible perform moves, connect
-//    func extendClusterByReconnecting(
-//        compInCluster: Computer, compToConnect: Computer,
-//        costLimit: Int
-//    ) -> Bool {
-//        let intersection = Util.intersections(compInCluster.pos, compToConnect.pos)
-//        for inter in intersection {
-//            guard let cable = findCableToReconnect(
-//                from: compInCluster.pos, to: inter,
-//                compType: compInCluster.type, fixedComp: [compInCluster, compToConnect]
-//            ) else {
-//                continue
-//            }
-//            let testCutConnect = Connect(comp1: cable.comp1, comp2: cable.comp2)
-//            resetConnect(connect: testCutConnect)
-//            defer {
-//                reverseTemporaryMoves()
-//                performConnect(connect: testCutConnect)
-//            }
-//            let ignorePosToClear = [compInCluster.pos] + Util.getBetweenPos(from: compInCluster.pos, to: inter) + [inter] +
-//                Util.getBetweenPos(from: inter, to: compToConnect.pos) + [compToConnect.pos]
-//                + [cable.comp1.pos + cable.comp2.pos]
-//            guard let movesToClear = movesToClear(
-//                from: compToConnect.pos, to: inter, ignorePos: ignorePosToClear,
-//                fixedComp: [compInCluster, compToConnect, cable.comp1, cable.comp2],
-//                addEnd: true),
-//                  let movesToInter = moveToPos(from: compToConnect.pos, pos: inter) else {
-//                continue
-//            }
-//            guard let (reconnectComp1, reconnectComp2) = findReconnection(
-//                comp1: cable.comp1, comp2: cable.comp2,
-//                ignorePos: Util.getBetweenPos(from: inter, to: compInCluster.pos),
-//                fixedComp: [compInCluster, compToConnect]
-//            ) else {
-//                continue
-//            }
-//            IO.log("try: \(compInCluster.pos), \(compToConnect.pos), \(inter), \(compToConnect.type)")
-//            IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
-//            IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
-//            let ignorePos = Util.getBetweenPos(from: compInCluster.pos, to: inter)
-//                            + Util.getBetweenPos(from: reconnectComp1.pos, to: reconnectComp2.pos)
-//                            + [compInCluster.pos] + [compToConnect.pos] + [reconnectComp1.pos] + [reconnectComp2.pos]
-//            let fixedComp = [compInCluster, compToConnect, reconnectComp1, reconnectComp2]
-//            guard let (movesToReconnect, movedCompToReconnect) = getMovesToConnectComp(
-//                comp1: reconnectComp1, comp2: reconnectComp2,
-//                additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp) as? ([Move], Computer?) else {
-//                continue
-//            }
-//            // temporary moves is reset above, so refix it.
-//            performTemporaryMoves(moves: movesToClear + movesToInter + movesToReconnect)
-//            guard let (movesToExtend, movedCompToExtend) = getMovesToConnectComp(
-//                    comp1: compInCluster, comp2: compToConnect,
-//                    additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp) as? ([Move], Computer?) else {
-//                continue
-//            }
-//            IO.log("d: \(reconnectComp1.pos), \(reconnectComp2.pos), \(compInCluster.pos), \(reconnectComp2.pos)")
-//
-//            let moves = movesToClear + movesToInter + movesToReconnect + movesToExtend
-//            let connects = [
-//                Connect(comp1: reconnectComp1, comp2: reconnectComp2),
-//                Connect(comp1: compInCluster, comp2: compToConnect)
-//            ]
-//            let movedComps = [movedCompToReconnect, movedCompToExtend]
-//
-//            if performCommandIfPossible(
-//                moves: moves, connects: connects, costLimit: costLimit, movedComps: movedComps
-//            ) {
-//                IO.log("extended")
-//                return true
-//            }
-//        }
-//        return false
-//    }
+    func extendClusterByReconnecting(
+        compInCluster: Computer, compToConnect: Computer,
+        costLimit: Int
+    ) -> Bool {
+        let intersection = Util.intersections(compInCluster.pos, compToConnect.pos)
+        for inter in intersection {
+            guard let cable = findCableToReconnect(
+                from: compInCluster.pos, to: inter,
+                compType: compInCluster.type, fixedComp: [compInCluster, compToConnect]
+            ) else {
+                continue
+            }
+            let testCutConnect = Connect(comp1: cable.comp1, comp2: cable.comp2)
+            var temporaryMoves = [Move]()
+            resetConnect(connect: testCutConnect)
+            defer {
+                reverseTemporaryMoves(moves: temporaryMoves)
+                performConnect(connect: testCutConnect)
+            }
+
+            let ignorePosToClear = [compInCluster.pos] + Util.getBetweenPos(from: compInCluster.pos, to: inter) + [inter] +
+                Util.getBetweenPos(from: inter, to: compToConnect.pos) + [compToConnect.pos]
+                + [cable.comp1.pos + cable.comp2.pos]
+            let (isCompleted1, moves1) = movesToClear(
+                from: compToConnect.pos, to: inter, ignorePos: ignorePosToClear,
+                fixedComp: [compInCluster, compToConnect, cable.comp1, cable.comp2],
+                addEnd: true)
+            temporaryMoves.append(contentsOf: moves1)
+            guard isCompleted1 else { continue }
+            
+            let (isCompleted2, moves2) = moveToPos(from: compToConnect.pos, pos: inter)
+            temporaryMoves.append(contentsOf: moves2)
+            guard isCompleted2 else { continue }
+            
+            guard let (reconnectComp1, reconnectComp2) = findReconnection(
+                comp1: cable.comp1, comp2: cable.comp2,
+                ignorePos: Util.getBetweenPos(from: inter, to: compInCluster.pos),
+                fixedComp: [compInCluster, compToConnect]
+            ) else {
+                continue
+            }
+            
+            IO.log("try: \(compInCluster.pos), \(compToConnect.pos), \(inter), \(compToConnect.type)")
+            IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
+            IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
+            
+            let ignorePos = Util.getBetweenPos(from: compInCluster.pos, to: inter)
+                            + Util.getBetweenPos(from: reconnectComp1.pos, to: reconnectComp2.pos)
+                            + [compInCluster.pos] + [compToConnect.pos] + [reconnectComp1.pos] + [reconnectComp2.pos]
+            let fixedComp = [compInCluster, compToConnect, reconnectComp1, reconnectComp2]
+            
+            guard let (movesToReconnect, movedCompToReconnect) = getMovesToConnectComp(
+                comp1: reconnectComp1, comp2: reconnectComp2,
+                additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp) as? ([Move], Computer?) else {
+                continue
+            }
+            temporaryMoves.append(contentsOf: movesToReconnect)
+            performTemporaryMoves(moves: movesToReconnect)
+            
+            guard let (movesToExtend, movedCompToExtend) = getMovesToConnectComp(
+                    comp1: compInCluster, comp2: compToConnect,
+                    additionalIgnorePos: ignorePos, additionalFixedComp: fixedComp) as? ([Move], Computer?) else {
+                continue
+            }
+            temporaryMoves.append(contentsOf: movesToExtend)
+            performTemporaryMoves(moves: movesToExtend)
+            
+            IO.log("d: \(reconnectComp1.pos), \(reconnectComp2.pos), \(compInCluster.pos), \(reconnectComp2.pos)")
+            reverseTemporaryMoves(moves: temporaryMoves)
+            
+            let moves = moves1 + moves2 + movesToReconnect + movesToExtend
+            let connects = [
+                Connect(comp1: reconnectComp1, comp2: reconnectComp2),
+                Connect(comp1: compInCluster, comp2: compToConnect)
+            ]
+            let movedComps = [movedCompToReconnect, movedCompToExtend]
+
+            if performCommandIfPossible(
+                moves: moves, connects: connects, costLimit: costLimit, movedComps: movedComps
+            ) {
+                IO.log("extended")
+                return true
+            }
+        }
+        return false
+    }
 
     private func findCableToReconnect(
         from: Pos, to: Pos, compType: Int,
