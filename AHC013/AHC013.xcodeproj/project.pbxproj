@@ -24,6 +24,7 @@
 		B1AA4A6F28A3D55F001706B3 /* Solver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6E28A3D55F001706B3 /* Solver.swift */; };
 		B1AA4A7028A3D55F001706B3 /* Solver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AA4A6E28A3D55F001706B3 /* Solver.swift */; };
 		B1B3A94F28AA59B000938E3C /* Tester.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B3A94E28AA59B000938E3C /* Tester.swift */; };
+		B1DACE3D28AA914B002F5227 /* Parameter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DACE3C28AA914B002F5227 /* Parameter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -51,6 +52,7 @@
 		B1AA4A6228A3C61F001706B3 /* FieldTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTest.swift; sourceTree = "<group>"; };
 		B1AA4A6E28A3D55F001706B3 /* Solver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Solver.swift; sourceTree = "<group>"; };
 		B1B3A94E28AA59B000938E3C /* Tester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tester.swift; sourceTree = "<group>"; };
+		B1DACE3C28AA914B002F5227 /* Parameter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parameter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +96,7 @@
 			children = (
 				B1AA4A6028A3C00C001706B3 /* Util.swift */,
 				B15AA07428A35C0600F89686 /* main.swift */,
+				B1DACE3C28AA914B002F5227 /* Parameter.swift */,
 				B1B3A94E28AA59B000938E3C /* Tester.swift */,
 				B1AA4A6E28A3D55F001706B3 /* Solver.swift */,
 				B1AA4A5C28A3BA1B001706B3 /* Field.swift */,
@@ -205,6 +208,7 @@
 				B15AA07528A35C0600F89686 /* main.swift in Sources */,
 				B1AA4A6128A3C00C001706B3 /* Util.swift in Sources */,
 				B15AA08E28A35D8600F89686 /* DataStructures.swift in Sources */,
+				B1DACE3D28AA914B002F5227 /* Parameter.swift in Sources */,
 				B1AA4A5F28A3BA9A001706B3 /* Values.swift in Sources */,
 				B1AA4A5D28A3BA1B001706B3 /* Field.swift in Sources */,
 				B1AA4A6F28A3D55F001706B3 /* Solver.swift in Sources */,

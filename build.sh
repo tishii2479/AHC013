@@ -11,7 +11,7 @@ python3 comb.py
 
 echo "[LOG] Output file: out/main.swift"
 echo "[LOG] Compile out/main.swift..."
-swiftc out/main.swift -o main.o
+swiftc out/main.swift -o exe/main.o
 fi
 
-echo "[LOG] Compile done. -> out/main.o"
+echo "[LOG] Compile done. -> exe/main.o"

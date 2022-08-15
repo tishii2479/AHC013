@@ -1,9 +1,10 @@
 protocol Solver {
-    init(field: Field)
+    init(field: Field, param: Parameter)
 }
 
 final class SolverV1: Solver {
     let field: Field
+    private let param: Parameter
     private(set) var performedMoves: [Move] = []
     private(set) var connects = Set<Connect>()
     private var mainType: Int = 0
@@ -15,11 +16,12 @@ final class SolverV1: Solver {
         performedMoves.count + connects.count
     }
 
-    init(field: Field) {
+    init(field: Field, param: Parameter) {
         self.field = field
+        self.param = param
         nearComputers = getNearCompPair(
             types: Array(1 ... field.computerTypes), distF: Util.distF,
-            distLimit: 20
+            distLimit: param.d3
         )
     }
     
@@ -27,12 +29,13 @@ final class SolverV1: Solver {
         self.field = field
         self.performedMoves = performedMoves
         self.connects = connects
+        self.param = Parameter(n: field.size, k: field.computerTypes)
     }
 
-    func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
+    func constructFirstCluster(type: Int) -> (Int, Int) {
         mainType = type
-        connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
-        connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
+        connectOneClusterMst(type: type, distLimit: param.d1, costLimit: param.c1)
+        connectOneClusterMst(type: type, distLimit: param.d2, costLimit: param.c2)
         connectOneClusterWithOtherComputer(type: type)
         
         reconnectablePairs = prepareReconnectablePairs()
@@ -40,25 +43,23 @@ final class SolverV1: Solver {
         return (field.calcScore(), currentCommands)
     }
     
-    func constructSecondCluster(param: Parameter) -> (Int, Int) {
+    func constructSecondCluster() -> (Int, Int) {
         let _ = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-            distLimit: 20,
-            costLimit: param.costLimit,
+            distLimit: param.d3,
+            costLimit: param.c3,
             extend: true
         )
         return (field.calcScore(), currentCommands)
     }
     
-    func constructOtherClusters(param: Parameter) -> (Int, Int) {
-        var costLimit = param.costLimit
+    func constructOtherClusters() -> (Int, Int) {
         while Time.isInTime() {
             let _ = connectOneClusterBfs(
                 types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-                distLimit: 10,
-                costLimit: costLimit
+                distLimit: param.d2,
+                costLimit: param.c2
             )
-            costLimit += 1
         }
         return (field.calcScore(), currentCommands)
     }
@@ -626,7 +627,7 @@ extension SolverV1 {
     // ISSUE: slow
     private func getNearCompPair(
         types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int, maxSize: Int = 10
+        distLimit: Int, maxSize: Int = 7
     ) -> [Computer: [(Int, Computer)]] {
         IO.log("getNearCompPair:start", Time.elapsedTime())
         var ret = [Computer: [(Int, Computer)]]()
@@ -654,10 +655,11 @@ extension SolverV1 {
         types: [Int], distF: (Pos, Pos) -> Int,
         distLimit: Int
     ) -> [Computer: [(Int, Computer)]] {
-        IO.log("getNearCompPair:start", Time.elapsedTime())
+        IO.log("getNearCompPair2:start", Time.elapsedTime())
         var ret = [Computer: [(Int, Computer)]]()
         for type in types {
             for (dist, (comp1, comp2)) in getSortedCompPair(type: type, distLimit: distLimit, distF: distF) {
+                guard Time.isInTime() else { break }
                 if ret[comp1] == nil {
                     ret[comp1] = []
                 }
@@ -670,7 +672,7 @@ extension SolverV1 {
                 }
             }
         }
-        IO.log("getNearCompPair:end", Time.elapsedTime())
+        IO.log("getNearCompPair2:end", Time.elapsedTime())
         return ret
     }
     

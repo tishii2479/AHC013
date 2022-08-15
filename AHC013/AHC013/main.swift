@@ -1,9 +1,37 @@
 import Foundation
 
 struct Parameter {
-    var distLimit: Int
-    var costLimit: Int
-    var searchTime: Double
+    var d1: Int
+    var d2: Int
+    var d3: Int
+    var c1: Int
+    var c2: Int
+    var c3: Int
+    
+    init(n: Int, k: Int) {
+        d1 = 5
+        c1 = 3
+        d2 = 5
+        c2 = 3
+        d3 = 5
+        c3 = 3
+    }
+    
+    init(
+        d1: Int,
+        d2: Int,
+        d3: Int,
+        c1: Int,
+        c2: Int,
+        c3: Int
+    ) {
+        self.d1 = d1
+        self.d2 = d2
+        self.d3 = d3
+        self.c1 = c1
+        self.c2 = c2
+        self.c3 = c3
+    }
 }
 
 func output(solver: SolverV1, commandLimit: Int) {
@@ -49,23 +77,23 @@ func main() {
         fieldInput[i] = IO.readString()
     }
     
-    // TODO: Optimize
-    let param = Parameter(distLimit: 5, costLimit: computerTypes == 2 ? 3 : 5, searchTime: 2.2)
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
+    
+    let searchTime = 2.3
 
-    Time.timeLimit = param.searchTime
+    Time.timeLimit = searchTime
 
-    while Time.elapsedTime() < param.searchTime {
+    while Time.elapsedTime() < searchTime {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
-        let solver = SolverV1(field: field)
-        let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
+        let solver = SolverV1(field: field, param: param)
+        let (score1, cost1) = solver.constructFirstCluster(type: mainType)
         IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         
 //        output(solver: solver, commandLimit: computerTypes * 100)
-        let _ = solver.constructSecondCluster(param: param)
-        let _ = solver.constructSecondCluster(param: param)
-        let (score2, cost2) = solver.constructSecondCluster(param: param)
+        let _ = solver.constructSecondCluster()
+        let _ = solver.constructSecondCluster()
+        let (score2, cost2) = solver.constructSecondCluster()
         solvers.append((score2, cost2, solver))
         IO.log("b:", score2, cost2, Time.elapsedTime(), type: .log)
 //        output(solver: solver, commandLimit: computerTypes * 100)
@@ -91,7 +119,7 @@ func main() {
     
     Time.timeLimit = 2.8
 
-    let _ = bestSolver.constructOtherClusters(param: param)
+    let _ = bestSolver.constructOtherClusters()
     
     output(solver: bestSolver, commandLimit: computerTypes * 100)
     

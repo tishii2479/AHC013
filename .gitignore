@@ -4,6 +4,7 @@ tools/
 .vscode/
 .mypy_cache/
 tmp/
+exe/
 *.o
 .swift-version
 xcuserdata
