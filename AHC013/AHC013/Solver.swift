@@ -38,6 +38,7 @@ final class SolverV1: Solver {
         IO.log("start:", Time.elapsedTime())
         for comp1 in field.computerGroup[type] {
             for comp2 in field.computerGroup[type] {
+                guard Time.isInTime() else { break }
                 let connect = Connect(comp1: comp1, comp2: comp2)
                 guard !connects.contains(connect) else { continue }
                 // TODO: temporary, remove
@@ -235,7 +236,6 @@ extension SolverV1 {
         }
     }
     
-    // reverseTemporaryMoves is wrong
     // let comp1, comp2
     // find cable between comp1, inter
     // compA, compB = cable.comps
@@ -255,6 +255,9 @@ extension SolverV1 {
         compInCluster: Computer, compToConnect: Computer,
         costLimit: Int
     ) -> Bool {
+        guard !field.isInSameCluster(comp1: compInCluster, comp2: compToConnect) else {
+            return false
+        }
         let intersection = Util.intersections(compInCluster.pos, compToConnect.pos)
         for inter in intersection {
             guard let cable = findCableToReconnect(
@@ -351,7 +354,9 @@ extension SolverV1 {
             if performCommandIfPossible(
                 moves: moves, connects: connects, costLimit: costLimit, movedComps: movedComps
             ) {
-                IO.log("extended")
+//                IO.log("extended: \(compInCluster.pos), \(compToConnect.pos)")
+//                IO.log("cable: \(cable.comp1.pos), \(cable.comp2.pos), \(cable.compType)")
+//                IO.log("found reconnection: \(reconnectComp1.pos), \(reconnectComp2.pos)")
                 isReconnected = true
                 return true
             }
@@ -646,6 +651,7 @@ extension SolverV1 {
         var ret = [Computer: [(Int, Computer)]]()
         for type in types {
             for comp in field.computerGroup[type] {
+                guard Time.isInTime() else { break }
                 let nearComp = field.getNearComputers(
                     aroundComp: comp,
                     loopLimit: distLimit * distLimit,
