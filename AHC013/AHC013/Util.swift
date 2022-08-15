@@ -56,8 +56,7 @@ class Util {
         var ret = [Pos]()
     
         var cPos = from
-        guard let dir = getDir(from: from, to: to).first else {
-            IO.log("Could not get dir for \(from), \(to)", type: .warn)
+        guard let dir = toDir(from: from, to: to) else {
             return ret
         }
     
@@ -81,7 +80,7 @@ class Util {
     }
     
     static func intersections(_ a: Pos, _ b: Pos) -> [Pos] {
-        return [Pos(x: a.x, y: b.y), Pos(x: b.x, y: a.y)]
+        [Pos(x: a.x, y: b.y), Pos(x: b.x, y: a.y)]
     }
     
     static func getMoves(from: Pos, to: Pos) -> [Move]? {
