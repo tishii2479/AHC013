@@ -1,26 +1,19 @@
-protocol Solver {
-    init(field: Field)
-}
-
-final class SolverV1: Solver {
+final class SolverV1 {
     let field: Field
     private(set) var performedMoves: [Move] = []
     private(set) var connects = Set<Connect>()
     private var mainType: Int = 0
     
-    private var nearComputers: [Computer: [(Int, Computer)]] = [:]
+    private var nearComputers: [Int: [(Int, Int)]] = [:]
     private var reconnectablePairs: [(Int, Computer, Computer)] = []
     
     var currentCommands: Int {
         performedMoves.count + connects.count
     }
 
-    init(field: Field) {
+    init(field: Field, nearCompPair: [Int: [(Int, Int)]]) {
         self.field = field
-        nearComputers = getNearCompPair(
-            types: Array(1 ... field.computerTypes), distF: Util.distF,
-            distLimit: field.size / 2
-        )
+        self.nearComputers = nearCompPair
     }
     
     init(field: Field, performedMoves: [Move], connects: Set<Connect>) {
@@ -110,10 +103,11 @@ extension SolverV1 {
 
         while let comp = q.pop() {
             guard Time.isInTime() else { return cluster }
-            guard let nearComps = nearComputers[comp] else {
+            guard let nearComps = nearComputers[comp.id] else {
                 continue
             }
-            for (_, nearComp) in nearComps {
+            for (_, nearCompId) in nearComps {
+                let nearComp = field.computers[nearCompId]
                 guard Time.isInTime() else { return cluster }
                 let dist = Util.distF(comp.pos, nearComp.pos)
                 var connected = connectCompIfPossible(
@@ -565,61 +559,9 @@ extension SolverV1 {
             return a.0 < b.0
         })
     }
-    
-    // TODO: change process
-    // ISSUE: slow
-    private func getNearCompPair(
-        types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int, maxSize: Int = 10
-    ) -> [Computer: [(Int, Computer)]] {
-        IO.log("getNearCompPair:start", Time.elapsedTime())
-        var ret = [Computer: [(Int, Computer)]]()
-        for type in types {
-            for comp in field.computerGroup[type] {
-                guard Time.isInTime() else { break }
-                let nearComp = field.getNearComputers(
-                    aroundComp: comp,
-                    loopLimit: distLimit * distLimit,
-                    distLimit: distLimit,
-                    distF: distF,
-                    maxSize: maxSize
-                )
-                ret[comp] = nearComp
-            }
-        }
-        IO.log("getNearCompPair:end", Time.elapsedTime())
-        return ret
-    }
-    
-    // TODO: change process
-    // ISSUE: slow
-    // Not used
-    private func getNearCompPair2(
-        types: [Int], distF: (Pos, Pos) -> Int,
-        distLimit: Int
-    ) -> [Computer: [(Int, Computer)]] {
-        IO.log("getNearCompPair:start", Time.elapsedTime())
-        var ret = [Computer: [(Int, Computer)]]()
-        for type in types {
-            for (dist, (comp1, comp2)) in getSortedCompPair(type: type, distLimit: distLimit, distF: distF) {
-                if ret[comp1] == nil {
-                    ret[comp1] = []
-                }
-                if ret[comp2] == nil {
-                    ret[comp2] = []
-                }
-                if dist <= distLimit {
-                    ret[comp1]?.append((dist, comp2))
-                    ret[comp2]?.append((dist, comp1))
-                }
-            }
-        }
-        IO.log("getNearCompPair:end", Time.elapsedTime())
-        return ret
-    }
-    
+
     private func prepareReconnectablePairs() -> [(Int, Computer, Computer)] {
-        IO.log("start:", Time.elapsedTime())
+        IO.log("prepareReconnectablePairs:start:", Time.elapsedTime())
         var pairs: [(Int, Computer, Computer)] = []
         for comp1 in field.computerGroup[mainType] {
             for comp2 in field.computerGroup[mainType] {
@@ -636,7 +578,7 @@ extension SolverV1 {
                 }
             }
         }
-        IO.log("end:", Time.elapsedTime())
+        IO.log("prepareReconnectablePairs:end:", Time.elapsedTime())
         return pairs.sorted(by: { $0.0 < $1.0 })
     }
     
@@ -695,7 +637,7 @@ extension SolverV1 {
             
             for dir in dirs {
                 guard let comp = field.cell(pos: cPos).computer,
-                      let nearComps = nearComputers[comp],
+                      let nearComps = nearComputers[comp.id],
                       // FIXME:
                       // Cable won't extend automatically,
                       // so another computer may come on the extended cable
@@ -706,7 +648,8 @@ extension SolverV1 {
                     disallowedMove = true
                     break
                 }
-                for (_, nearComp) in nearComps.prefix(5) {
+                for (_, nearCompId) in nearComps.prefix(5) {
+                    let nearComp = field.computers[nearCompId]
                     let scoreDelta = Util.isAligned(nearComp.pos, comp.pos + dir) ? 1 : 0
                         - (Util.isAligned(nearComp.pos, comp.pos) ? 1 : 0)
                     score += scoreDelta

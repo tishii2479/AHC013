@@ -42,10 +42,15 @@ func main() {
     var mainType: Int = 1
 
     Time.timeLimit = param.searchTime
+    
+    let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
+    let nearCompPair = field.getNearCompPair(
+        types: Array(1 ... computerTypes), distF: Util.distF,
+        distLimit: field.size / 2, maxSize: 10)
 
     while Time.elapsedTime() < param.searchTime {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
-        let solver = SolverV1(field: field)
+        let solver = SolverV1(field: field, nearCompPair: nearCompPair)
         let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
         IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         

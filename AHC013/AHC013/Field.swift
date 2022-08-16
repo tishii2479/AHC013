@@ -324,14 +324,37 @@ extension Field {
         return false
     }
     
+    func getNearCompPair(
+        types: [Int], distF: (Pos, Pos) -> Int,
+        distLimit: Int, maxSize: Int = 10
+    ) -> [Int: [(Int, Int)]] {
+        IO.log("getNearCompPair:start", Time.elapsedTime())
+        var ret = [Int: [(Int, Int)]]()
+        for type in types {
+            for comp in computerGroup[type] {
+                guard Time.isInTime() else { break }
+                let nearComp = getNearComputers(
+                    aroundComp: comp,
+                    loopLimit: distLimit * distLimit,
+                    distLimit: distLimit,
+                    distF: distF,
+                    maxSize: maxSize
+                )
+                ret[comp.id] = nearComp
+            }
+        }
+        IO.log("getNearCompPair:end", Time.elapsedTime())
+        return ret
+    }
+    
     func getNearComputers(
         aroundComp: Computer,
         loopLimit: Int = 50,
         distLimit: Int = 20,
         distF: (Pos, Pos) -> Int,
         maxSize: Int = 100
-    ) -> [(Int, Computer)] {
-        var ret = [(Int, Computer)]()
+    ) -> [(Int, Int)] {
+        var ret = [(Int, Int)]()
         
         var q = Queue<Pos>()
         var seenPos = Set<Pos>()
@@ -357,7 +380,7 @@ extension Field {
                     
                     if let comp = cell(pos: nextPos).computer,
                        aroundComp.type == comp.type {
-                        ret.append((distF(aroundComp.pos, comp.pos), comp))
+                        ret.append((distF(aroundComp.pos, comp.pos), comp.id))
                     }
                 }
             }

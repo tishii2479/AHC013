@@ -9,11 +9,13 @@ enum Tester {
         let field = Field(size: size, computerTypes: computerTypes, fieldInput: fieldInput)
         for move in solver.performedMoves {
             guard field.performMove(move: move) else {
+                IO.log("Failed....", type: .error)
                 return false
             }
         }
         for connect in solver.connects {
             guard field.performConnect(connect: connect) else {
+                IO.log("Failed........", type: .error)
                 return false
             }
         }
