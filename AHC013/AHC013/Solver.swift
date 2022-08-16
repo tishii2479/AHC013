@@ -25,7 +25,7 @@ final class SolverV1 {
     func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
         mainType = type
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
-        connectOneClusterMst(type: type, distLimit: param.buffed(param.distLimit), costLimit: param.buffed(param.costLimit))
+        connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
         connectOneClusterWithOtherComputer(type: type)
         
         reconnectablePairs = prepareReconnectablePairs()
@@ -144,7 +144,8 @@ extension SolverV1 {
         distLimit: Int = 4, costLimit: Int = 10,
         trialLimit: Int = 10
     ) {
-        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: Util.distF)
+        let distF: (Pos, Pos) -> Int = { $0.dist(to: $1) }
+        let compPair = getSortedCompPair(type: type, distLimit: distLimit, distF: distF)
         for (dist, (comp1, comp2)) in compPair {
             guard Time.isInTime() else { return }
             guard currentCommands + dist <= field.computerTypes * 100 else {

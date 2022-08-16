@@ -3,17 +3,10 @@ import Foundation
 struct Parameter {
     var distLimit: Int
     var costLimit: Int
-    var buff: Double
     var searchTime: Double
     
-    func buffed(_ x: Int) -> Int {
-        Int(Double(x) * buff)
-    }
-    
     init(n: Int, k: Int) {
-        self.searchTime = 2.3
-        self.buff = 2
-        
+        self.searchTime = 2.5
         if k == 2 {
             distLimit = n / 4
         }
@@ -79,6 +72,7 @@ func main() {
         
         let (score3, cost3) = solver.constructSecondCluster(param: param)
         IO.log("d:", solver.currentCommands, score3, Time.elapsedTime())
+
         solvers.append((score3, cost3, solver))
         
         mainType += 1
