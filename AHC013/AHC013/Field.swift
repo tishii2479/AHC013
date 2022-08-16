@@ -96,11 +96,12 @@ class Field {
         }
     }
     
-    func performMove(move: Move, isTemporary: Bool = false) {
+    @discardableResult
+    func performMove(move: Move, isTemporary: Bool = false) -> Bool {
         guard let comp = cell(pos: move.pos).computer else {
             IO.log("Could not find computer at: \(move.pos)", type: .error)
             dump()
-            fatalError()
+            return false
         }
         if !isTemporary,
            let connectedComp = comp.connectedComp(to: move.dir.rev) {
@@ -117,7 +118,7 @@ class Field {
             cells[(comp.pos + move.dir).y][(comp.pos + move.dir).x].cable = nil
         }
 //        IO.log("move:", move.pos, move.pos + move.dir, comp.type, type: .debug)
-        moveComputer(comp: comp, to: comp.pos + move.dir)
+        return moveComputer(comp: comp, to: comp.pos + move.dir)
     }
     
     func performMoves(moves: [Move]) {
@@ -132,10 +133,11 @@ class Field {
         }
     }
     
+    @discardableResult
     func performConnect(
         connect: Connect, movedComp: Computer? = nil,
         isTemporary: Bool = false
-    ) {
+    ) -> Bool {
         let comp1 = connect.comp1, comp2 = connect.comp2
         // just in case, perform both...
         clusters[uf.root(of: comp1.id)].merge(clusters[uf.root(of: comp2.id)])
@@ -145,7 +147,7 @@ class Field {
                 
         guard let dir = Util.toDir(from: comp1.pos, to: comp2.pos) else {
             IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
-            return
+            return false
         }
 
         // Update connect cables
@@ -153,13 +155,14 @@ class Field {
             for comp in movedComp.connected {
                 guard let dir = Util.toDir(from: movedComp.pos, to: comp.pos) else {
                     IO.log("Something went wrong connecting: \(comp1.pos), \(comp2.pos)")
-                    return
+                    return false
                 }
                 for pos in Util.getBetweenPos(from: movedComp.pos, to: comp.pos) {
                     // check conflict
                     if let cable = cells[pos.y][pos.x].cable,
                        cable.compType != movedComp.type || cable.direction != Util.fromDir(dir: dir) {
                         IO.log("Trying to overwrite cable at: \(pos), \(movedComp.pos), \(comp.pos), may be destructive", type: .warn)
+                        return false
                     }
                     cells[pos.y][pos.x].cable = Cable(
                         compType: movedComp.type,
@@ -191,7 +194,7 @@ class Field {
                 guard !cell(pos: pos).isComputer else {
                     IO.log("\(pos) is not empty to place cables", type: .error)
                     dump()
-                    fatalError()
+                    return false
                 }
                 cells[pos.y][pos.x].cable = Cable(
                     compType: cable.comp1.type, direction: Util.fromDir(dir: dir),
@@ -202,7 +205,7 @@ class Field {
                 guard !cell(pos: pos).isComputer else {
                     IO.log("\(pos) is not empty to place cables", type: .error)
                     dump()
-                    fatalError()
+                    return false
                 }
                 cells[pos.y][pos.x].cable = Cable(
                     compType: cable.comp2.type, direction: Util.fromDir(dir: dir),
@@ -218,7 +221,7 @@ class Field {
                 guard !cell(pos: pos).isComputer else {
                     IO.log("\(pos) is not empty to place cables", type: .error)
                     dump()
-                    fatalError()
+                    return false
                 }
                 cells[pos.y][pos.x].cable = Cable(
                     compType: comp1.type, direction: Util.fromDir(dir: dir),
@@ -226,17 +229,20 @@ class Field {
                 )
             }
         }
+        return true
     }
     
-    private func moveComputer(comp: Computer, to: Pos) {
+    @discardableResult
+    private func moveComputer(comp: Computer, to: Pos) -> Bool {
         guard !cell(pos: to).isComputer else {
             IO.log("\(comp.pos) moving to \(to), which is not empty", type: .error)
             dump()
-            fatalError()
+            return false
         }
         cells[to.y][to.x].computer = comp
         cells[comp.pos.y][comp.pos.x].computer = nil
         comp.pos = to
+        return true
     }
 }
 
