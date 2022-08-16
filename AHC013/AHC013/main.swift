@@ -4,6 +4,17 @@ struct Parameter {
     var distLimit: Int
     var costLimit: Int
     var searchTime: Double
+    
+    init(n: Int, k: Int) {
+        distLimit = n / 5
+        searchTime = 2.3
+        if k <= 3 {
+            costLimit = 3
+        }
+        else {
+            costLimit = 5
+        }
+    }
 }
 
 func output(solver: SolverV1, commandLimit: Int) {
@@ -32,12 +43,7 @@ func main() {
         fieldInput[i] = IO.readString()
     }
     
-    // TODO: Optimize
-    let param = Parameter(
-        distLimit: fieldSize / 5,
-        costLimit: computerTypes == 2 ? 3 : 5,
-        searchTime: 2.3
-    )
+    let param = Parameter(n: fieldSize, k: computerTypes)
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
 

@@ -14,4 +14,4 @@ echo "[LOG] Compile out/main.swift..."
 swiftc out/main.swift -o main.o
 fi
 
-echo "[LOG] Compile done. -> out/main.o"
+echo "[LOG] Compile done. -> main.o"
