@@ -4,21 +4,17 @@ struct Parameter {
     var distLimit: Int
     var costLimit: Int
     var searchTime: Double
-    var semiBuff: Double
-    var buff: Double
     
     func semiBuffed(_ x: Int) -> Int {
-        Int(Double(x) * semiBuff)
+        x * 3 / 2
     }
     
     func buffed(_ x: Int) -> Int {
-        Int(Double(x) * buff)
+        x * 2
     }
     
     init(n: Int, k: Int) {
         self.searchTime = 2.5
-        self.semiBuff = 1.5
-        self.buff = 2
         
         if k == 2 {
             distLimit = n / 4
