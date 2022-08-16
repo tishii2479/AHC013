@@ -113,8 +113,7 @@
     - https://nyaannyaan.github.io/library/data-structure/rollback-union-find.hpp.html
 
 ```
-[RESULT] Average is 6478.583333333333 : ./main.o
-[RESULT] Max score average is 6478.583333333333 : ./main.o
+[RESULT] Average is 6711.846 : ./main.o
 Score distribution:
 0000 ~ 0499:
 0500 ~ 0999:
@@ -122,40 +121,40 @@ Score distribution:
 1500 ~ 1999:
 2000 ~ 2499:
 2500 ~ 2999:
-3000 ~ 3499:
-3500 ~ 3999: ooo
+3000 ~ 3499: oo
+3500 ~ 3999: oo
 4000 ~ 4499:
-4500 ~ 4999: o
-5000 ~ 5499: oooooooo
-5500 ~ 5999: oooooooooooo
-6000 ~ 6499: oooooooooooooooooooooooooooo
-6500 ~ 6999: ooooooooooooooooo
-7000 ~ 7499: ooooooooooooo
-7500 ~ 7999: oooooooooo
-8000 ~ 8499: oo
-8500 ~ 8999: oo
+4500 ~ 4999:
+5000 ~ 5499: ooooooo
+5500 ~ 5999: ooooooooooooo
+6000 ~ 6499: oooooooooooooo
+6500 ~ 6999: ooooooooooooo
+7000 ~ 7499: ooooooooooooooooooo
+7500 ~ 7999: oooooooooooooo
+8000 ~ 8499: oooooooo
+8500 ~ 8999: ooo
 9000 ~ 9499:
 9500 ~ 9999:
 Worst cases:
-Case: 263, score: 3264
-Case: 217, score: 3416
-Case: 94, score: 3522
-Case: 7, score: 3588
-Case: 289, score: 3621
-Case: 59, score: 3639
-Case: 255, score: 3726
-Case: 61, score: 3730
-Case: 25, score: 3740
-Case: 9, score: 3771
+Case: 330, score: 3015
+Case: 479, score: 3237
+Case: 462, score: 3246
+Case: 342, score: 3268
+Case: 313, score: 3285
+Case: 346, score: 3327
+Case: 494, score: 3336
+Case: 94, score: 3406
+Case: 263, score: 3494
+Case: 461, score: 3495
 Best cases:
-Case: 235, score: 8895
-Case: 19, score: 8866
-Case: 99, score: 8784
-Case: 127, score: 8692
-Case: 191, score: 8542
-Case: 211, score: 8523
-Case: 171, score: 8437
-Case: 43, score: 8375
-Case: 183, score: 8275
-Case: 47, score: 8256
+Case: 15, score: 9101
+Case: 243, score: 9048
+Case: 123, score: 8876
+Case: 471, score: 8866
+Case: 83, score: 8790
+Case: 215, score: 8781
+Case: 359, score: 8779
+Case: 447, score: 8778
+Case: 127, score: 8701
+Case: 435, score: 8694
 ```
