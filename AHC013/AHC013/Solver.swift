@@ -36,13 +36,13 @@ final class SolverV1 {
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
         if let cluster = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-            distLimit: field.size / 2,
+            distLimit: param.distLimit * 2,
             costLimit: param.costLimit,
             extend: true
         ) {
             let _ = connectOneClusterBfs(
                 types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-                distLimit: field.size / 2,
+                distLimit: param.distLimit * 2,
                 costLimit: param.costLimit * 2,
                 extend: true,
                 startComps: Array(cluster.comps)
@@ -172,7 +172,6 @@ extension SolverV1 {
                         
                         for i in 0 ..< dirs.count {
                             let nextPos = cPos + dirs[i]
-                            //
                             let isCorner = i + 1 < dirs.count && dirs[i] != dirs[i + 1]
                             guard nextPos != comp1.pos else {
                                 ok = false
@@ -444,6 +443,7 @@ extension SolverV1 {
     ) -> ([Move]?, Computer?) {
         var selectedMoves: [Move]? = nil
         var selectedMovedComp: Computer? = nil
+        var bestDistSum = 123456
         
         let currentScore = field.getCluster(ofComputer: comp1).calcScore()
             + field.getCluster(ofComputer: comp2).calcScore()
@@ -489,12 +489,22 @@ extension SolverV1 {
                 )
                 temporaryMoves.append(contentsOf: moves3)
                 guard isCompleted3 else { continue }
+                
+                var distSum = 0
+                if let nearComp = nearComputers[fromComp.id] {
+                    for (_, compId) in nearComp {
+                        distSum += Util.distF(inter, field.computers[compId].pos)
+                    }
+                }
 
                 let moves = moves1 + moves2 + moves3
+                let didImproveDistSum = distSum < bestDistSum
                 let didImprovedMoves = selectedMoves == nil || moves.count < selectedMoves!.count
+                let isSameMoves = selectedMoves == nil || moves.count == selectedMoves!.count
                 let newCluster = field.getCluster(ofComputer: comp1).merged(field.getCluster(ofComputer: comp2))
                 let didImproveScore = !checkImproveScore || newCluster.calcScore() > currentScore
-                if didImprovedMoves && didImproveScore {
+                if didImproveScore && (didImprovedMoves || (didImproveDistSum && isSameMoves)) {
+                    bestDistSum = distSum
                     selectedMoves = moves
                     selectedMovedComp = fromComp
                 }
@@ -626,7 +636,7 @@ extension SolverV1 {
         var dirs = Util.dirsForPath(from: from, to: to)
 
         var bestRet: [Move]? = nil
-        var bestScore = -123456
+        var bestScore = 123456
         
         for _ in 0 ..< min(dirs.count * 2, trialLimit) {
             dirs.shuffle()
@@ -651,15 +661,16 @@ extension SolverV1 {
                 }
                 for (_, nearCompId) in nearComps.prefix(5) {
                     let nearComp = field.computers[nearCompId]
-                    let scoreDelta = Util.isAligned(nearComp.pos, comp.pos + dir) ? 1 : 0
-                        - (Util.isAligned(nearComp.pos, comp.pos) ? 1 : 0)
-                    score += scoreDelta
+//                    let scoreDelta = Util.isAligned(nearComp.pos, comp.pos + dir) ? 1 : 0
+//                        - (Util.isAligned(nearComp.pos, comp.pos) ? 1 : 0)
+                    let dist = Util.distF(nearComp.pos, comp.pos + dir) - Util.distF(nearComp.pos, comp.pos)
+                    score += dist
                 }
                 ret.append(Move(pos: cPos, dir: dir))
                 cPos += dir
             }
             
-            if !disallowedMove && score > bestScore {
+            if !disallowedMove && score < bestScore {
                 bestScore = score
                 bestRet = ret
             }
