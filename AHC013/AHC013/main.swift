@@ -36,7 +36,7 @@ func main() {
     let param = Parameter(
         distLimit: fieldSize / 5,
         costLimit: computerTypes == 2 ? 3 : 5,
-        searchTime: 2.2
+        searchTime: 2.3
     )
     var solvers = [(Int, Int, SolverV1)]()
     var mainType: Int = 1
@@ -68,7 +68,7 @@ func main() {
     }
     
     IO.log("c:", Time.elapsedTime())
-
+    
     solvers.sort(by: { (a, b) in
         if a.0 != b.0 { return a.0 > b.0 }
         return a.1 < b.1
@@ -76,7 +76,11 @@ func main() {
     
     IO.log(solvers.map{ $0.0 })
     
-    guard let bestSolver = solvers.first?.2 else {
+    guard let bestSolver = solvers.first(where: {
+        Tester.isValid(
+            size: fieldSize, computerTypes: computerTypes,
+            fieldInput: fieldInput, solver: $0.2)
+    })?.2 else {
         return
     }
     
