@@ -218,7 +218,7 @@ class Field {
             comp2.connected.insert(comp1)
 
             for pos in Util.getBetweenPos(from: comp1.pos, to: comp2.pos) {
-                guard !cell(pos: pos).isComputer else {
+                guard cell(pos: pos).isEmpty else {
                     IO.log("\(pos) is not empty to place cables", type: .error)
                     dump()
                     return false

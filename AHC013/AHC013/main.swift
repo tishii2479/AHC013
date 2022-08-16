@@ -4,9 +4,22 @@ struct Parameter {
     var distLimit: Int
     var costLimit: Int
     var searchTime: Double
+    var semiBuff: Double
+    var buff: Double
+    
+    func semiBuffed(_ x: Int) -> Int {
+        Int(Double(x) * semiBuff)
+    }
+    
+    func buffed(_ x: Int) -> Int {
+        Int(Double(x) * buff)
+    }
     
     init(n: Int, k: Int) {
         self.searchTime = 2.5
+        self.semiBuff = 1.5
+        self.buff = 2
+        
         if k == 2 {
             distLimit = n / 4
         }
@@ -102,7 +115,23 @@ func main() {
 
     let _ = bestSolver.constructOtherClusters(param: param)
     
-    output(solver: bestSolver, commandLimit: computerTypes * 100)
+    // double check
+    if Tester.isValid(
+        size: fieldSize, computerTypes: computerTypes,
+        fieldInput: fieldInput, solver: bestSolver) {
+        output(solver: bestSolver, commandLimit: computerTypes * 100)
+    }
+    else {
+        solvers.removeFirst()
+        guard let bestSolver = solvers.first(where: {
+            Tester.isValid(
+                size: fieldSize, computerTypes: computerTypes,
+                fieldInput: fieldInput, solver: $0.2)
+        })?.2 else {
+            return
+        }
+        output(solver: bestSolver, commandLimit: computerTypes * 100)
+    }
     
     IO.log("Score:", bestSolver.field.calcScore())
     IO.log("Runtime:", Time.elapsedTime())

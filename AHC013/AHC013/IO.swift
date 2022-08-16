@@ -68,7 +68,7 @@ extension IO {
         type: LogType = .debug
     ) {
         if type == .log { return }
-//        if type == .debug { return }
+        if type == .debug { return }
 //        if type == .error || type == .warn || type == .info {
         let tag: String = type.rawValue
         let output =
