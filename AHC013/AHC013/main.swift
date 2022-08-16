@@ -8,6 +8,14 @@ struct Parameter {
     init(n: Int, k: Int) {
         distLimit = n / 5
         searchTime = 2.3
+        
+        if k == 2 {
+            distLimit = n / 4
+        }
+        else {
+            distLimit = n / 5
+        }
+        
         if k <= 3 {
             costLimit = 3
         }
