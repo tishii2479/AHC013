@@ -57,20 +57,16 @@ func main() {
     while Time.elapsedTime() < param.searchTime {
         let field = Field(size: fieldSize, computerTypes: computerTypes, fieldInput: fieldInput)
         let solver = SolverV1(field: field, nearCompPair: nearCompPair)
-        let (score1, cost1) = solver.constructFirstCluster(type: mainType, param: param)
-        IO.log("a:", score1, cost1, mainType, Time.elapsedTime(), type: .log)
         
-//        output(solver: solver, commandLimit: computerTypes * 100)
+        let (score1, _) = solver.constructFirstCluster(type: mainType, param: param)
         IO.log("a:", solver.currentCommands, score1, Time.elapsedTime())
+        
         let (score2, _) = solver.constructSecondCluster(param: param)
         IO.log("b:", solver.currentCommands, score2, Time.elapsedTime())
-//        let (score3, _) = solver.constructSecondCluster(param: param)
-//        IO.log("c:", solver.currentCommands, score3, Time.elapsedTime())
-        let (score4, cost4) = solver.constructSecondCluster(param: param)
-        IO.log("d:", solver.currentCommands, score4, Time.elapsedTime())
-        solvers.append((score4, cost4, solver))
-        IO.log("b:", score4, cost4, Time.elapsedTime(), type: .log)
-//        output(solver: solver, commandLimit: computerTypes * 100)
+        
+        let (score3, cost3) = solver.constructSecondCluster(param: param)
+        IO.log("d:", solver.currentCommands, score3, Time.elapsedTime())
+        solvers.append((score3, cost3, solver))
         
         mainType += 1
         if mainType > computerTypes {
