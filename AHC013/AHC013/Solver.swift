@@ -25,7 +25,7 @@ final class SolverV1 {
     func constructFirstCluster(type: Int, param: Parameter) -> (Int, Int) {
         mainType = type
         connectOneClusterMst(type: type, distLimit: param.distLimit, costLimit: param.costLimit)
-        connectOneClusterMst(type: type, distLimit: param.distLimit * 2, costLimit: param.costLimit * 2)
+        connectOneClusterMst(type: type, distLimit: param.buffed(param.distLimit), costLimit: param.buffed(param.costLimit))
         connectOneClusterWithOtherComputer(type: type)
         
         reconnectablePairs = prepareReconnectablePairs()
@@ -36,10 +36,17 @@ final class SolverV1 {
     func constructSecondCluster(param: Parameter) -> (Int, Int) {
         if let cluster = connectOneClusterBfs(
             types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
-            distLimit: param.distLimit * 2,
+            distLimit: param.distLimit,
             costLimit: param.costLimit,
             extend: true
         ) {
+            let _ = connectOneClusterBfs(
+                types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
+                distLimit: param.distLimit * 2,
+                costLimit: param.costLimit * 3 / 2,
+                extend: true,
+                startComps: Array(cluster.comps)
+            )
             let _ = connectOneClusterBfs(
                 types: Array(1 ... field.computerTypes).filter{ $0 != mainType },
                 distLimit: param.distLimit * 2,

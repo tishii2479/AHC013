@@ -3,11 +3,16 @@ import Foundation
 struct Parameter {
     var distLimit: Int
     var costLimit: Int
+    var buff: Double
     var searchTime: Double
     
+    func buffed(_ x: Int) -> Int {
+        Int(Double(x) * buff)
+    }
+    
     init(n: Int, k: Int) {
-        distLimit = n / 5
-        searchTime = 2.3
+        self.searchTime = 2.3
+        self.buff = 2
         
         if k == 2 {
             distLimit = n / 4
