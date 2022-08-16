@@ -3,6 +3,8 @@ import subprocess
 import sys
 from typing import List, Tuple
 
+from tqdm import tqdm
+
 
 def test_run(
     exe_file: str, cases: int, run: int, verbose: bool = True
@@ -16,7 +18,7 @@ def test_run(
     max_score_sum = 0
     results: List[Tuple[Tuple[int, int], float]] = []
 
-    for i in range(cases):
+    for i in tqdm(range(cases)):
         if verbose:
             print(exe_file + ": " + str(i), file=sys.stderr)
         sum = 0
@@ -59,36 +61,34 @@ def test_run(
             max_score = max(max_score, score)
 
         max_score_sum += max_score
-        if verbose or i % (cases // 10) == 0:
-            print("          Average for", total_sum / (i + 1) / run)
+        results.append(((n, k), sum / run))
+        if verbose:
             if verbose:
                 print("Average score for", in_file, sum / run)
-                print("    Max score for", in_file, max_score)
-                print("Max score average for", in_file, max_score_sum / (i + 1))
-            results.append(((n, k), sum / run))
+                print("          Average for", total_sum / (i + 1) / run)
     print("[RESULT] Average is", total_sum / cases / run, ":", exe_file)
-    print("[RESULT] Max score average is", max_score_sum / cases, ":", exe_file)
 
-    print("Score distribution:")
+    if verbose:
+        print("Score distribution:")
 
-    for i in range(hist_div):
-        print(
-            str(i * hist_w).zfill(4)
-            + " ~ "
-            + str((i + 1) * hist_w - 1).zfill(4)
-            + ": "
-            + "o" * (hist[i] * 100 // cases // run)
-        )
+        for i in range(hist_div):
+            print(
+                str(i * hist_w).zfill(4)
+                + " ~ "
+                + str((i + 1) * hist_w - 1).zfill(4)
+                + ": "
+                + "o" * (hist[i] * 100 // cases // run)
+            )
 
-    print("Worst cases:")
-    scores.sort()
+        print("Worst cases:")
+        scores.sort()
 
-    for i in range(10):
-        print(f"Case: {scores[i][1]}, score: {scores[i][0]}")
+        for i in range(10):
+            print(f"Case: {scores[i][1]}, score: {scores[i][0]}")
 
-    print("Best cases:")
-    for i in range(10):
-        print(f"Case: {scores[-i-1][1]}, score: {scores[-i-1][0]}")
+        print("Best cases:")
+        for i in range(10):
+            print(f"Case: {scores[-i-1][1]}, score: {scores[-i-1][0]}")
 
     return results
 

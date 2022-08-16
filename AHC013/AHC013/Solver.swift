@@ -65,6 +65,7 @@ final class SolverV1 {
     }
 }
 
+
 extension SolverV1 {
     func connectOneClusterMst(type: Int, distLimit: Int = 100, costLimit: Int = 100) {
         let distF: (Pos, Pos) -> Int = { (a: Pos, b: Pos) -> Int in
