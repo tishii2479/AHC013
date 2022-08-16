@@ -743,7 +743,9 @@ extension SolverV1 {
     
     private func performConnect(connect: Connect, movedComp: Computer? = nil) {
         guard Util.isAligned(connect.comp1.pos, connect.comp2.pos) else {
-            fatalError()
+            IO.log("performing connect between no align computers, \(connect.comp1.pos), \(connect.comp2.pos)",
+                   type: .error)
+            return
         }
         if let movedComp = movedComp,
            let cable = field.cell(pos: movedComp.pos).cable,
@@ -761,7 +763,9 @@ extension SolverV1 {
     
     private func resetConnect(connect: Connect) {
         guard Util.isAligned(connect.comp1.pos, connect.comp2.pos) else {
-            fatalError()
+            IO.log("resetting connect between no align computers, \(connect.comp1.pos), \(connect.comp2.pos)",
+                   type: .error)
+            return
         }
         connects.remove(connect)
         field.resetConnect(connect: connect)
